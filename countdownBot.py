@@ -83,7 +83,7 @@ def printAkademien(akademien, chatID=None):
 def printAkademieCountdown(akademien, chatID=None):
     akaList = []
     
-    for a in (a for a in akademien):
+    for a in (a for a in sorted(akademien, key=lambda a: (a.date))):
         akaList.append("Es sind noch {} Tage bis zur {}\n\t-- _{}_\n".format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
         
     if chatID:
