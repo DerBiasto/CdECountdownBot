@@ -36,11 +36,13 @@ def getLastUpdateID(updates):
         updateIDs.append(update["update_id"])
     return max(updateIDs)
     
-def sendMessage(text, chatID, replyMarkup=None):
+def sendMessage(text, chatID, replyMarkup=None, parseMode=None):
     text = urllib.parse.quote_plus(text)
     url = URL + "sendMessage?text={}&chat_id={}".format(text, chatID)
     if replyMarkup:
         url += "&reply_markup={}".format(replyMarkup)
+    if parseMode:
+        url += "&parse_mode={}".format(parseMode)
     getURL(url)
 
 def editMessageText(text, chatID, messageID, replyMarkup=None):
@@ -60,27 +62,32 @@ def echoAll(updates):
             print(e)
 
 def printAkademien(akademien, chatID=None):
-    akaList = []
+    msgParts = []
+    
+    charcount = 0
     
     for a in (a for a in akademien):
         if a.date:
-            akaList.append("{} -- {}\n\t-- {}\n".format(a.name, a.date.strftime('%d.%m.%Y'), a.description))
+            msg ="{} -- {}".format(a.name, a.date.strftime('%d.%m.%Y'))
+            msgParts.append(msg)
+            msg ="\t-- _{}_\n".format(a.description)
+            msgParts.append(msg)
         else:
-            akaList.append("{}\n\t-- {}\n".format(a.name, a.description))
+            msgParts.append("{}\n\t-- _{}_\n".format(a.name, a.description))
         
     if chatID:
-        sendMessage("\n".join(akaList), chatID)
+        sendMessage("\n".join(msgParts), chatID, parseMode="Markdown")
         
-    return akaList
+    return msgParts
     
 def printAkademieCountdown(akademien, chatID=None):
     akaList = []
     
     for a in (a for a in akademien):
-        akaList.append("Es sind noch {} Tage bis zur {}\n\t-- {}\n".format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
+        akaList.append("Es sind noch {} Tage bis zur {}\n\t-- _{}_\n".format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
         
     if chatID:
-        sendMessage("\n".join(akaList), chatID)
+        sendMessage("\n".join(akaList), chatID, parseMode="Markdown")
         
     return akaList
 
@@ -181,13 +188,16 @@ def handleUpdates(updates):
                 
                 args = text.split(' ', 1)
                 
+                command = args[0].replace('@cde_akademie_countdown_bot', '')
+                
                 if len(args) > 1:
-                    if args[0] == "/delete_akademie":
+                    if cq["from"]["id"] != 459053986:
+                        editMessageText("Du hast leider nicht die erforderlichen Berechtigung um diesen Befehl auszuführen :/".format(args[1]), cq["message"]["chat"]["id"], cq["message"]["message_id"])
+                        continue
+                    elif command == "/delete_akademie":
                         #print(args[1])
                         db.deleteAkademie(args[1])
-                    
-                
-                editMessageText("Akademie {} wurde gelöscht".format(args[1]), cq["message"]["chat"]["id"], cq["message"]["message_id"])
+                        editMessageText("Akademie {} wurde gelöscht".format(args[1]), cq["message"]["chat"]["id"], cq["message"]["message_id"])
                 
             except KeyError as e:
                 print("KeyError: {}".format(e))
