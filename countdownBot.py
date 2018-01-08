@@ -91,6 +91,7 @@ def handleUpdates(updates):
                 akademien = db.getAkademien()
                 
                 args = text.split(' ', 1)
+                args[0].replace('@cde_akademie_countdown_bot','')
                 if args[0].startswith("/"):
                     if args[0] == "/start":
                         sendMessage("Hallo! Ich bin ein Bot um die Tage bis zur nächsten CdE Akademie zu zählen!", chatID)
