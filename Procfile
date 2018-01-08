@@ -1,1 +1,1 @@
-web: python countdownBot.py
+worker: python countdownBot.py
