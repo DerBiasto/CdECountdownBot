@@ -138,7 +138,7 @@ def handleUpdates(updates):
                                 sendMessage("Akademie {} hinzugefügt".format(name), chatID)
                                 akademien = db.getAkademien()
                         printAkademien(akademien, chatID)
-                    elif args[0] == "/change_akademie":
+                    elif args[0] == "/edit_akademie":
                         if len(args) <= 1:
                             sendMessage("Bitte gib an, welche Akademie du ändern willst. \nDie Syntax lautet: /change_akademie Name; Neuer Name; Neue Beschreibung; Neues Datum. Leere Angaben bleiben unverändert.", chatID)
                         else:
