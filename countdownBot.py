@@ -63,7 +63,10 @@ def printAkademien(akademien, chatID=None):
     akaList = []
     
     for a in (a for a in akademien):
-        akaList.append("{} - {} - {}".format(a.name, a.description, a.date.strftime('%d.%m.%Y')))
+        if a.date:
+            akaList.append("{} -- {}\n\t-- {}\n".format(a.name, a.date.strftime('%d.%m.%Y'), a.description))
+        else:
+            akaList.append("{}\n\t-- {}\n".format(a.name, a.description))
         
     if chatID:
         sendMessage("\n".join(akaList), chatID)
@@ -74,7 +77,7 @@ def printAkademieCountdown(akademien, chatID=None):
     akaList = []
     
     for a in (a for a in akademien):
-        akaList.append("Es sind noch {} Tage bis zur {}\n\t-{}".format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
+        akaList.append("Es sind noch {} Tage bis zur {}\n\t-- {}\n".format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
         
     if chatID:
         sendMessage("\n".join(akaList), chatID)
@@ -91,17 +94,26 @@ def handleUpdates(updates):
                 akademien = db.getAkademien()
                 
                 args = text.split(' ', 1)
-                args[0].replace('@cde_akademie_countdown_bot','')
-                if args[0].startswith("/"):
-                    if args[0] == "/start":
+                
+                command = args[0].replace('@cde_akademie_countdown_bot','')
+                
+                if command.startswith("/"):
+                    if command == "/start":
                         sendMessage("Hallo! Ich bin ein Bot um die Tage bis zur nächsten CdE Akademie zu zählen!", chatID)
-                    elif args[0] == "/list":
+                    elif command == "/list":
                         if len(akademien) > 0:
                             printAkademien(akademien, chatID)
                         else:
                             sendMessage("Es sind noch keine Akademien eingespeichert :'(", chatID)
-                    elif args[0] == "/countdown":
+                    elif command == "/countdown":
                         akaCountdown = [a for a in akademien if a.date]
+                        
+                        if len(args) > 1:
+                            name = args[1].strip()
+                            akaCountdown = [a for a in akaCountdown if a.name == name]
+                            if len(akaCountdown) == 0:
+                                sendMessage("Es ist keine Akademie mit diesem Namen bekannt, oder diese Akademie hat kein Startdatum", chatID)
+                                continue
                         if len(akaCountdown) > 0:
                             printAkademieCountdown(akaCountdown, chatID)
                         else:
@@ -109,10 +121,7 @@ def handleUpdates(updates):
                     elif msg["from"]["id"] != 459053986:
                         sendMessage("Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/", chatID)
                         continue
-                    elif args[0] == "/delete_akademie":
-                        keyboard = buildInlineKeyboard(akademien)
-                        sendMessage("Wähle eine Akademie aus die gelöscht werden soll", chatID, keyboard)
-                    elif args[0] == "/add_akademie":
+                    elif command == "/add_akademie":
                         if len(args) <= 1:
                             sendMessage("Bitte gib einen Namen für die neue Akademie ein. Du kannst außerdem eine Beschreibung und ein Startdatum angeben.\nDie Syntax lautet: Name;Beschreibung;Datum(YYYY-MM-DD)", chatID)
                         else:
@@ -139,7 +148,7 @@ def handleUpdates(updates):
                                 sendMessage("Akademie {} hinzugefügt".format(name), chatID)
                                 akademien = db.getAkademien()
                         printAkademien(akademien, chatID)
-                    elif args[0] == "/edit_akademie":
+                    elif command == "/edit_akademie":
                         if len(args) <= 1:
                             sendMessage("Bitte gib an, welche Akademie du ändern willst. \nDie Syntax lautet: /change_akademie Name; Neuer Name; Neue Beschreibung; Neues Datum. Leere Angaben bleiben unverändert.", chatID)
                         else:
@@ -155,6 +164,9 @@ def handleUpdates(updates):
                                 db.updateAkademie(name, newName, newDescription, newDate)
                                 akademien = db.getAkademien()
                                 printAkademien(akademien, chatID)
+                    elif command == "/delete_akademie":
+                        keyboard = buildInlineKeyboard(akademien)
+                        sendMessage("Wähle eine Akademie aus die gelöscht werden soll", chatID, keyboard)
                         
                                 
                         
