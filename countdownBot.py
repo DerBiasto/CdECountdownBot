@@ -3,6 +3,7 @@ import requests
 import json
 import time
 import datetime
+from datetime import timedelta
 import urllib
 from dbhelper import DBHelper
 
@@ -90,6 +91,25 @@ def printAkademieCountdown(akademien, chatID=None):
         sendMessage("\n".join(akaList), chatID, parseMode="Markdown")
         
     return akaList
+    
+def tooMuchSpam(update):
+    
+    if update["message"]["chat"]["type"] == "private":
+        return False
+    elif update["message"]["chat"]["type"] == "group":
+        lastMsg = db.getLastMessageTime(update["message"]["chat"]["id"])
+        if lastMsg == []:
+            print("new chatID")
+            db.setLastMessageTime(update["message"]["chat"]["id"])
+            return False
+        else:
+            delta = datetime.datetime.now() - datetime.datetime.strptime(lastMsg[0], '%Y-%m-%d %H:%M:%S.%f')
+            if delta < timedelta(minutes=5):
+                return True
+            db.setLastMessageTime(update["message"]["chat"]["id"])
+            return False
+        
+        return False    
 
 def handleUpdates(updates):
     for update in updates["result"]:
@@ -107,12 +127,12 @@ def handleUpdates(updates):
                 if command.startswith("/"):
                     if command == "/start":
                         sendMessage("Hallo! Ich bin ein Bot um die Tage bis zur nächsten CdE Akademie zu zählen!", chatID)
-                    elif command == "/list":
+                    elif command == "/list" and not tooMuchSpam(update):
                         if len(akademien) > 0:
                             printAkademien(akademien, chatID)
                         else:
                             sendMessage("Es sind noch keine Akademien eingespeichert :'(", chatID)
-                    elif command == "/countdown":
+                    elif command == "/countdown" and not tooMuchSpam(update):
                         akaCountdown = [a for a in akademien if a.date]
                         
                         if len(args) > 1:
@@ -125,6 +145,12 @@ def handleUpdates(updates):
                             printAkademieCountdown(akaCountdown, chatID)
                         else:
                             sendMessage("Es sind noch keine Akademien mit Datum eingespeichert :'(", chatID)
+                    elif command == "/subscribe":
+                        db.addSubcription(chatID, '1')
+                    elif command == "/unsubscribe":
+                        print(db.getSubscriptions('1'))
+                        db.removeSubscription(chatID)
+                        print(db.getSubscriptions('1'))
                     elif msg["from"]["id"] != 459053986:
                         sendMessage("Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/", chatID)
                         continue
@@ -155,6 +181,9 @@ def handleUpdates(updates):
                                 sendMessage("Akademie {} hinzugefügt".format(name), chatID)
                                 akademien = db.getAkademien()
                         printAkademien(akademien, chatID)
+                    elif command == "/delete_akademie":
+                        keyboard = buildInlineKeyboard(akademien)
+                        sendMessage("Wähle eine Akademie aus die gelöscht werden soll", chatID, keyboard)
                     elif command == "/edit_akademie":
                         if len(args) <= 1:
                             sendMessage("Bitte gib an, welche Akademie du ändern willst. \nDie Syntax lautet: /change_akademie Name; Neuer Name; Neue Beschreibung; Neues Datum. Leere Angaben bleiben unverändert.", chatID)
@@ -168,12 +197,11 @@ def handleUpdates(updates):
                             except:
                                 sendMessage("Beim Einlesen deiner Änderung ist ein Fehler aufgetreten :(", chatID)
                             else:
-                                db.updateAkademie(name, newName, newDescription, newDate)
+                                db.editAkademie(name, newName, newDescription, newDate)
                                 akademien = db.getAkademien()
                                 printAkademien(akademien, chatID)
-                    elif command == "/delete_akademie":
-                        keyboard = buildInlineKeyboard(akademien)
-                        sendMessage("Wähle eine Akademie aus die gelöscht werden soll", chatID, keyboard)
+                    elif command == "/send_subscriptions":
+                        sendSubscriptions('1')
                         
                                 
                         
@@ -209,14 +237,33 @@ def buildInlineKeyboard(akademien):
     replyMarkup = {"inline_keyboard": keyboard}
     return json.dumps(replyMarkup)
 
+def sendSubscriptions(subscription):
+    
+    print("sending Subscriptions")
+    
+    subscribers = db.getSubscriptions(subscription)
+    
+    akademien = db.getAkademien()
+    akaCountdown = [a for a in akademien if a.date]
+    
+    for s in subscribers:
+        print(s)
+        printAkademieCountdown(akaCountdown, s[0])
+        
+    return
+    
 def main():
     db.setup()
     lastUpdateID = None
+    today = (datetime.datetime.now() - timedelta(hours=7,minutes=0)).strftime('%Y-%m-%d')
     while True:
         updates = getUpdates(lastUpdateID)
         if len(updates["result"]) > 0:
             lastUpdateID = getLastUpdateID(updates) + 1
             handleUpdates(updates)
+        if today != (datetime.datetime.now() - timedelta(hours=7,minutes=0)).strftime('%Y-%m-%d'):
+            today = (datetime.datetime.now() - timedelta(hours=7,minutes=0)).strftime('%Y-%m-%d')
+            sendSubscriptions('1')
         time.sleep(0.5)
         
 if __name__ == "__main__":

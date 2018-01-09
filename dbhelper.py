@@ -20,6 +20,11 @@ class DBHelper:
         q = "CREATE TABLE IF NOT EXISTS akademien(name text, description text, date text)"
         self.c.execute(q)
         q = "CREATE INDEX IF NOT EXISTS akademieName ON akademien (name ASC)"
+        self.c.execute(q)
+        q = "CREATE TABLE IF NOT EXISTS chats (chatID text, lastMessage text)"
+        self.c.execute(q)
+        q = "CREATE TABLE IF NOT EXISTS subscribers (chatID text, subscriptions text)"
+        self.c.execute(q)
         self.c.commit()
         
     def addAkademie(self, name, description="", date=""):
@@ -34,7 +39,7 @@ class DBHelper:
         self.c.execute(q, args)
         self.c.commit()
         
-    def updateAkademie(self, name, newName, newDescription, newDate):
+    def editAkademie(self, name, newName, newDescription, newDate):
         if newDate != '':
             q = "UPDATE akademien SET date = ? WHERE name = ?"
             args = (newDate, name)
@@ -55,5 +60,41 @@ class DBHelper:
         for row in self.c.execute(q):
             result.append(Akademie(row[0],row[1],row[2]))
         return result
+        
+    def getLastMessageTime(self, chatID):
+        q = "SELECT lastMessage FROM chats WHERE chatID = ?"
+        args = (chatID, )
+        result = [x[0] for x in self.c.execute(q, args)]
+        
+        return result        
+        
+    def setLastMessageTime(self, chatID):
+        if self.getLastMessageTime(chatID) == []:
+            q = "INSERT INTO chats (lastMessage, chatID) VALUES (?, ?)"
+        else:
+            q = "UPDATE chats SET lastMessage = ? WHERE chatID = ?"
+        args = (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'), chatID)
+        self.c.execute(q, args)
+        self.c.commit()
+        
+    def addSubcription(self, chatID, subscriptions):
+        if [s for s in self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ?", (chatID, ))] == []:
+            print("Steht noch nicht drin")
+            q = "INSERT INTO subscribers (chatID, subscriptions) VALUES (?, ?)"
+            args = (chatID, subscriptions)
+            self.c.execute(q, args)
+            self.c.commit()
+    
+    def removeSubscription(self, chatID):
+        q = "DELETE FROM subscribers WHERE chatID = ?"
+        args = (chatID, )
+        self.c.execute(q, args)
+        self.c.commit()
+            
+    def getSubscriptions(self, subscriptions):
+        q = "SELECT chatID FROM subscribers WHERE subscriptions = ?"
+        args = (subscriptions, )
+        return [s for s in self.c.execute(q, args)]
+        
         
         
