@@ -214,6 +214,8 @@ def handleUpdates(updates):
                         sendSubscriptions('1', force=True)
                     elif command == '/get_subscriptions':
                         print(db.getSubscriptions('1'))
+                    elif command == '/now'
+                        sendMessage(datetime.datetime.now('%H:%M:%S'), chatID)
                         
                                 
                         
