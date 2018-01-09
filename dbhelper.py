@@ -77,7 +77,7 @@ class DBHelper:
         self.c.execute(q, args)
         self.c.commit()
         
-    def addSubcription(self, chatID, subscriptions, time='07:00:00'):
+    def addSubcription(self, chatID, subscriptions, time='06:00:00'):
         if [s for s in self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ? and time = ?", (chatID, time))] == []:
             q = "INSERT INTO subscribers (chatID, subscriptions, time) VALUES (?, ?, ?)"
             args = (chatID, subscriptions, time)

@@ -81,16 +81,24 @@ def printAkademien(akademien, chatID=None):
         
     return msgParts
     
-def printAkademieCountdown(akademien, chatID=None):
+def printAkademieCountdown(akademien, chatID=None, preText=None, postText=None):
     akaList = []
     
     for a in (a for a in sorted(akademien, key=lambda a: (a.date))):
         akaList.append('Es sind noch {} Tage bis zur {}\n\t-- _{}_\n'.format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
         
-    if chatID:
-        sendMessage('\n'.join(akaList), chatID, parseMode="Markdown")
+    msg = '\n'.join(akaList)
         
-    return akaList
+    if preText:
+        msg = preText + msg
+    
+    if postText:
+        msg = msg + postText
+        
+    if chatID:
+        sendMessage(msg, chatID, parseMode="Markdown")
+        
+    return msg
     
 def tooMuchSpam(update):
     
@@ -149,18 +157,20 @@ def handleUpdates(updates):
                             try:
                                 time = datetime.datetime.strptime(args[1], '%H:%M').strftime('%H:%M')
                                 db.addSubcription(chatID, '1', time)
-                                sendMessage('Countdownbenachrichtigungen für täglich {} Uhr erfolgreich abonniert!'.format(time), chatID)
+                                sendMessage('Countdownbenachrichtigungen für täglich {} Uhr(UTC) erfolgreich abonniert!'.format(time), chatID)
                             except ValueError:
                                 db.addSubcription(chatID, '1')
-                                sendMessage('Uhrzeit konnte nicht gelesen werden. Tägliche Benachrichtigungen wurden für 07:00 Uhr abonniert!', chatID)
+                                sendMessage('Uhrzeit konnte nicht gelesen werden. Tägliche Benachrichtigungen wurden für 06:00 Uhr(UTC) abonniert!', chatID)
                         else:
                             db.addSubcription(chatID, '1')
-                            sendMessage('Tägliche Benachrichtigungen für 07:00 Uhr erfolgreich abonniert!', chatID)
+                            sendMessage('Tägliche Benachrichtigungen für 06:00 Uhr(UTC) erfolgreich abonniert!', chatID)
                             
                         
                     elif command == '/unsubscribe':
                         db.removeSubscription(chatID)
                         sendMessage('Alle täglichen Benachrichtigungen für diesen Chat wurden erfolgreich gelöscht!', chatID)
+                    elif command == '/now':
+                        sendMessage(datetime.datetime.utcnow().strftime('%H:%M:%S'), chatID)
                     elif msg["from"]["id"] != 459053986:
                         sendMessage('Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/', chatID)
                         continue
@@ -214,8 +224,6 @@ def handleUpdates(updates):
                         sendSubscriptions('1', force=True)
                     elif command == '/get_subscriptions':
                         print(db.getSubscriptions('1'))
-                    elif command == '/now':
-                        sendMessage(datetime.datetime.now().strftime('%H:%M:%S'), chatID)
                         
                                 
                         
@@ -256,7 +264,7 @@ def sendSubscriptions(subscription, force=False):
     #print("sending Subscriptions")
     
     subscribers = db.getSubscriptions(subscription)
-    now = datetime.datetime.now().strftime('%H:%M')
+    now = datetime.datetime.utcnow().strftime('%H:%M')
     
     akademien = db.getAkademien()
     akaCountdown = [a for a in akademien if a.date]
@@ -265,7 +273,7 @@ def sendSubscriptions(subscription, force=False):
         #print(s)
         if s[1] == now or force:
             #print('Send to this Subscriber')
-            printAkademieCountdown(akaCountdown, s[0])
+            printAkademieCountdown(akaCountdown, s[0], preText = 'Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(now))
         
     return
     
