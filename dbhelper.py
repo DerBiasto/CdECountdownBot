@@ -77,22 +77,27 @@ class DBHelper:
         self.c.execute(q, args)
         self.c.commit()
         
-    def addSubcription(self, chatID, subscriptions):
-        if [s for s in self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ?", (chatID, ))] == []:
-            print("Steht noch nicht drin")
-            q = "INSERT INTO subscribers (chatID, subscriptions) VALUES (?, ?)"
-            args = (chatID, subscriptions)
+    def addSubcription(self, chatID, subscriptions, time='07:00:00'):
+        if [s for s in self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ? and time = ?", (chatID, time))] == []:
+            q = "INSERT INTO subscribers (chatID, subscriptions, time) VALUES (?, ?, ?)"
+            args = (chatID, subscriptions, time)
             self.c.execute(q, args)
             self.c.commit()
+        else:
+            print('Steht bereits in der Subscriberlist')
     
-    def removeSubscription(self, chatID):
-        q = "DELETE FROM subscribers WHERE chatID = ?"
-        args = (chatID, )
+    def removeSubscription(self, chatID, time=None):
+        if time:
+            q = "DELETE FROM subscribers WHERE chatID = ? and time = ?"
+            args = (chatID, time)
+        else:
+            q = "DELETE FROM subscribers WHERE chatID = ?"
+            args = (chatID, )
         self.c.execute(q, args)
         self.c.commit()
             
     def getSubscriptions(self, subscriptions):
-        q = "SELECT chatID FROM subscribers WHERE subscriptions = ?"
+        q = "SELECT chatID, time FROM subscribers WHERE subscriptions = ?"
         args = (subscriptions, )
         return [s for s in self.c.execute(q, args)]
         
