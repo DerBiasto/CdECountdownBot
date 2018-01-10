@@ -104,7 +104,7 @@ def tooMuchSpam(update):
     
     if update["message"]["chat"]["type"] == "private":
         return False
-    elif update["message"]["chat"]["type"] == "group":
+    elif update["message"]["chat"]["type"] == "group" or update["message"]["chat"]["type"] == "supergroup":
         lastMsg = db.getLastMessageTime(update["message"]["chat"]["id"])
         if lastMsg == []:
             db.setLastMessageTime(update["message"]["chat"]["id"])
@@ -112,6 +112,7 @@ def tooMuchSpam(update):
         else:
             delta = datetime.datetime.now() - datetime.datetime.strptime(lastMsg[0], '%Y-%m-%d %H:%M:%S.%f')
             if delta < timedelta(minutes=5):
+                print("Too much spam in chat {}".format(update["message"]["chat"]["id"]))
                 return True
             db.setLastMessageTime(update["message"]["chat"]["id"])
             return False
