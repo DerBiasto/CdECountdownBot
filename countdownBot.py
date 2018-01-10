@@ -286,13 +286,16 @@ def main():
     now = datetime.datetime.now().strftime('%H:%M')
     while True:
         updates = getUpdates(lastUpdateID)
-        if len(updates["result"]) > 0:
-            lastUpdateID = getLastUpdateID(updates) + 1
-            handleUpdates(updates)
-        if now != datetime.datetime.now().strftime('%Y-%m-%d %H:%M'):
-            now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-            sendSubscriptions('1')
-        time.sleep(0.5)
+        try:
+            if len(updates["result"]) > 0:
+                lastUpdateID = getLastUpdateID(updates) + 1
+                handleUpdates(updates)
+            if now != datetime.datetime.now().strftime('%Y-%m-%d %H:%M'):
+                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+                sendSubscriptions('1')
+            time.sleep(0.5)
+        except KeyError:
+            pass
         
 if __name__ == "__main__":
     main()
