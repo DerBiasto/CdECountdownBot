@@ -135,12 +135,16 @@ def handleUpdates(updates):
                 if command.startswith('/'):
                     if command == '/start':
                         sendMessage('Hallo! Ich bin ein Bot um die Tage bis zur nächsten CdE Akademie zu zählen!', chatID)
-                    elif command == '/list' and not tooMuchSpam(update):
+                    elif command == '/list':
+                        if tooMuchSpam(update):
+                            continue
                         if len(akademien) > 0:
                             printAkademien(akademien, chatID)
                         else:
                             sendMessage('Es sind noch keine Akademien eingespeichert :\'(', chatID)
-                    elif command == '/countdown' and not tooMuchSpam(update):
+                    elif command == '/countdown':
+                        if tooMuchSpam(update):
+                            continue
                         akaCountdown = [a for a in akademien if a.date]
                         
                         if len(args) > 1:
@@ -165,8 +169,6 @@ def handleUpdates(updates):
                         else:
                             db.addSubcription(chatID, '1')
                             sendMessage('Tägliche Benachrichtigungen für 06:00 Uhr(UTC) erfolgreich abonniert!', chatID)
-                            
-                        
                     elif command == '/unsubscribe':
                         db.removeSubscription(chatID)
                         sendMessage('Alle täglichen Benachrichtigungen für diesen Chat wurden erfolgreich gelöscht!', chatID)
