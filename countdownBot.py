@@ -110,7 +110,7 @@ def tooMuchSpam(update):
             db.setLastMessageTime(update["message"]["chat"]["id"])
             return False
         else:
-            delta = datetime.datetime.now() - datetime.datetime.strptime(lastMsg[0], '%Y-%m-%d %H:%M:%S.%f')
+            delta = datetime.datetime.utcnow() - datetime.datetime.strptime(lastMsg[0], '%Y-%m-%d %H:%M:%S.%f')
             if delta < timedelta(minutes=5):
                 print("Too much spam in chat {}".format(update["message"]["chat"]["id"]))
                 return True
@@ -283,15 +283,15 @@ def sendSubscriptions(subscription, force=False):
 def main():
     db.setup()
     lastUpdateID = None
-    now = datetime.datetime.now().strftime('%H:%M')
+    now = datetime.datetime.utcnow().strftime('%H:%M')
     while True:
         updates = getUpdates(lastUpdateID)
         try:
             if len(updates["result"]) > 0:
                 lastUpdateID = getLastUpdateID(updates) + 1
                 handleUpdates(updates)
-            if now != datetime.datetime.now().strftime('%Y-%m-%d %H:%M'):
-                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+            if now != datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M'):
+                now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')
                 sendSubscriptions('1')
             time.sleep(0.5)
         except KeyError:

@@ -73,7 +73,7 @@ class DBHelper:
             q = "INSERT INTO chats (lastMessage, chatID) VALUES (?, ?)"
         else:
             q = "UPDATE chats SET lastMessage = ? WHERE chatID = ?"
-        args = (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'), chatID)
+        args = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'), chatID)
         self.c.execute(q, args)
         self.c.commit()
         
