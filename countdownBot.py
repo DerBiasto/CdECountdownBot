@@ -85,7 +85,10 @@ def printAkademieCountdown(akademien, chatID=None, preText=None, postText=None):
     akaList = []
     
     for a in (a for a in sorted(akademien, key=lambda a: (a.date))):
-        akaList.append('Es sind noch {} Tage bis zur {}\n\t-- _{}_\n'.format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
+        if a.name.endswith('kademie'):
+            akaList.append('Es sind noch {} Tage bis zur {}\n\t-- _{}_\n'.format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
+        elif a.name == 'Seminar':
+            akaList.append('Es sind noch {} Tage bis zum {}\n\t-- _{}_\n'.format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
         
     msg = '\n'.join(akaList)
         
@@ -134,7 +137,7 @@ def handleUpdates(updates):
                 
                 if command.startswith('/'):
                     if command == '/start':
-                        sendMessage('Hallo! Ich bin ein Bot um die Tage bis zur nächsten CdE Akademie zu zählen!', chatID)
+                        sendMessage('Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chatID)
                     elif command == '/list':
                         if tooMuchSpam(update):
                             continue
