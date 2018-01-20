@@ -30,7 +30,6 @@ def getUpdates(offset=None,timeout=10):
     js = getJsonFromURL(url)
     return js
     
-    
 def getLastUpdateID(updates):
     updateIDs = []
     for update in updates["result"]:
@@ -67,7 +66,7 @@ def printAkademien(akademien, chatID=None):
     
     charcount = 0
     
-    for a in (a for a in akademien):
+    for a in (a for a in sorted(akademien, key=lambda a: (a.name))):
         if a.date:
             msg ='{} -- {}'.format(a.name, a.date.strftime('%d.%m.%Y'))
             msgParts.append(msg)
