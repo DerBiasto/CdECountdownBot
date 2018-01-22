@@ -23,7 +23,7 @@ class DBHelper:
         self.c.execute(q)
         q = "CREATE TABLE IF NOT EXISTS chats (chatID text, lastMessage text)"
         self.c.execute(q)
-        q = "CREATE TABLE IF NOT EXISTS subscribers (chatID text, subscriptions text)"
+        q = "CREATE TABLE IF NOT EXISTS subscribers (chatID text, subscriptions text, time text)"
         self.c.execute(q)
         self.c.commit()
         

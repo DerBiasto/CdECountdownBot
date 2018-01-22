@@ -86,9 +86,11 @@ def printAkademieCountdown(akademien, chatID=None, preText=None, postText=None):
     for a in (a for a in sorted(akademien, key=lambda a: (a.date))):
         if a.name.endswith('kademie') or a.name.endswith('Aka'):
             akaList.append('Es sind noch {} Tage bis zur {}\n\t-- _{}_\n'.format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
-        elif a.name == 'Seminar':
+        elif a.name == 'Seminar' or a.name.endswith('Segeln'):
             akaList.append('Es sind noch {} Tage bis zum {}\n\t-- _{}_\n'.format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
-        
+        else:
+            akaList.append('Es sind noch {} bis zur Veranstaltung {}\n\t-- _{}_\n'.format((a.date-datetime.datetime.today().date()).days, a.name, a.description))
+            
     msg = '\n'.join(akaList)
         
     if preText:
