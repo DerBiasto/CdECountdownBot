@@ -8,8 +8,6 @@ import urllib.parse
 from dbhelper import DBHelper
 import configparser
 
-db = DBHelper()
-
 
 class TClient:
     URL = "https://api.telegram.org/bot{}/{}"
@@ -116,7 +114,7 @@ def print_akademie_countdown(tclient, akademien, chat_id=None, pre_text=None, po
     return msg
 
 
-def too_much_spam(update):
+def too_much_spam(update, db):
     if update["message"]["chat"]["type"] == "private":
         return False
     elif update["message"]["chat"]["type"] == "group" or update["message"]["chat"]["type"] == "supergroup":
@@ -133,7 +131,7 @@ def too_much_spam(update):
             return False
 
 
-def handle_updates(updates, tclient):
+def handle_updates(updates, tclient, db):
     for update in updates["result"]:
         if "message" in update.keys():
             try:
@@ -151,14 +149,14 @@ def handle_updates(updates, tclient):
                         tclient.send_message(
                             'Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chat_id)
                     elif command == '/list':
-                        if too_much_spam(update):
+                        if too_much_spam(update, db):
                             continue
                         if len(akademien) > 0:
                             print_akademien(tclient, akademien, chat_id)
                         else:
                             tclient.send_message('Es sind noch keine Akademien eingespeichert :\'(', chat_id)
                     elif command == '/countdown':
-                        if too_much_spam(update):
+                        if too_much_spam(update, db):
                             continue
                         aka_countdown = [a for a in akademien if a.date]
 
@@ -263,7 +261,7 @@ def handle_updates(updates, tclient):
                                 akademien = db.get_akademien()
                                 print_akademien(tclient, akademien, chat_id)
                     elif command == '/send_subscriptions':
-                        send_subscriptions(tclient, '1', force=True)
+                        send_subscriptions(tclient, db, '1', force=True)
                     elif command == '/get_subscriptions':
                         print(db.get_subscriptions('1'))
             except KeyError:
@@ -302,7 +300,7 @@ def build_inline_keyboard(akademien):
     return json.dumps(reply_markup)
 
 
-def send_subscriptions(tclient, subscription, force=False):
+def send_subscriptions(tclient, db, subscription, force=False):
     # print("sending Subscriptions")
 
     subscribers = db.get_subscriptions(subscription)
@@ -323,6 +321,7 @@ def send_subscriptions(tclient, subscription, force=False):
 
 def main():
     # Setup DB
+    db = DBHelper('akademien.sqlite')
     db.setup()
 
     # Read configuration and setup Telegram client
@@ -337,10 +336,10 @@ def main():
         try:
             if len(updates["result"]) > 0:
                 last_update_id = get_last_update_id(updates) + 1
-                handle_updates(updates, tclient)
+                handle_updates(updates, tclient, db)
             if now != datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M'):
                 now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-                send_subscriptions(tclient, '1')
+                send_subscriptions(tclient, db, '1')
             time.sleep(0.5)
         except KeyError:
             pass
