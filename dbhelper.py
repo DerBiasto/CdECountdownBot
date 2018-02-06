@@ -1,6 +1,7 @@
 import sqlite3
 import datetime
 
+
 class Akademie:
     def __init__(self, name, description="", date=""):
         self.name = name
@@ -8,14 +9,15 @@ class Akademie:
         try:
             date = date.strip()
             self.date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-        except:
+        except ValueError:
             self.date = None
+
 
 class DBHelper:
     def __init__(self, dbname="akademien.sqlite"):
         self.dbname = dbname
         self.c = sqlite3.connect(dbname)
-        
+
     def setup(self):
         q = "CREATE TABLE IF NOT EXISTS akademien(name text, description text, date text)"
         self.c.execute(q)
@@ -26,80 +28,78 @@ class DBHelper:
         q = "CREATE TABLE IF NOT EXISTS subscribers (chatID text, subscriptions text, time text)"
         self.c.execute(q)
         self.c.commit()
-        
-    def addAkademie(self, name, description="", date=""):
+
+    def add_akademie(self, name, description="", date=""):
         q = "INSERT INTO akademien (name, description, date) VALUES (?, ?, ?)"
         args = (name, description, date)
         self.c.execute(q, args)
         self.c.commit()
-        
-    def deleteAkademie(self, name):
+
+    def delete_akademie(self, name):
         q = "DELETE FROM akademien WHERE name = (?)"
-        args = (name, )
+        args = (name,)
         self.c.execute(q, args)
         self.c.commit()
-        
-    def editAkademie(self, name, newName, newDescription, newDate):
-        if newDate != '':
+
+    def edit_akademie(self, name, new_name, new_description, new_date):
+        if new_date != '':
             q = "UPDATE akademien SET date = ? WHERE name = ?"
-            args = (newDate, name)
+            args = (new_date, name)
             self.c.execute(q, args)
-        if newDescription != '':
+        if new_description != '':
             q = "UPDATE akademien SET description = ? WHERE name = ?"
-            args = (newDescription, name)
+            args = (new_description, name)
             self.c.execute(q, args)
-        if newName != '':
+        if new_name != '':
             q = "UPDATE akademien SET name = ? WHERE name = ?"
-            args = (newName, name)
+            args = (new_name, name)
             self.c.execute(q, args)
         self.c.commit()
-       
-    def getAkademien(self):
+
+    def get_akademien(self):
         q = "SELECT name, description, date FROM akademien"
         result = []
         for row in self.c.execute(q):
-            result.append(Akademie(row[0],row[1],row[2]))
+            result.append(Akademie(row[0], row[1], row[2]))
         return result
-        
-    def getLastMessageTime(self, chatID):
+
+    def get_last_message_time(self, chat_id):
         q = "SELECT lastMessage FROM chats WHERE chatID = ?"
-        args = (chatID, )
+        args = (chat_id,)
         result = [x[0] for x in self.c.execute(q, args)]
-        
-        return result        
-        
-    def setLastMessageTime(self, chatID):
-        if self.getLastMessageTime(chatID) == []:
+
+        return result
+
+    def set_last_message_time(self, chat_id):
+        if not self.get_last_message_time(chat_id):
             q = "INSERT INTO chats (lastMessage, chatID) VALUES (?, ?)"
         else:
             q = "UPDATE chats SET lastMessage = ? WHERE chatID = ?"
-        args = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'), chatID)
+        args = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'), chat_id)
         self.c.execute(q, args)
         self.c.commit()
-        
-    def addSubcription(self, chatID, subscriptions, time='06:00:00'):
-        if [s for s in self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ? and time = ?", (chatID, time))] == []:
+
+    def add_subcription(self, chat_id, subscriptions, time='06:00:00'):
+        if not self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ? AND time = ?",
+                              (chat_id, time)):
             q = "INSERT INTO subscribers (chatID, subscriptions, time) VALUES (?, ?, ?)"
-            args = (chatID, subscriptions, time)
+            args = (chat_id, subscriptions, time)
             self.c.execute(q, args)
             self.c.commit()
         else:
             print('Steht bereits in der Subscriberlist')
-    
-    def removeSubscription(self, chatID, time=None):
+
+    def remove_subscription(self, chat_id, time=None):
         if time:
             q = "DELETE FROM subscribers WHERE chatID = ? and time = ?"
-            args = (chatID, time)
+            args = (chat_id, time)
         else:
             q = "DELETE FROM subscribers WHERE chatID = ?"
-            args = (chatID, )
+            args = (chat_id,)
         self.c.execute(q, args)
         self.c.commit()
-            
-    def getSubscriptions(self, subscriptions):
+
+    def get_subscriptions(self, subscriptions):
         q = "SELECT chatID, time FROM subscribers WHERE subscriptions = ?"
-        args = (subscriptions, )
+        args = (subscriptions,)
         return [s for s in self.c.execute(q, args)]
-        
-        
-        
