@@ -99,9 +99,6 @@ class CountdownBot:
 
         subscribers = self.db.get_subscriptions(subscription)
 
-        akademien = self.db.get_akademien()
-        aka_countdown = [a for a in akademien if a.date]
-
         now = interval[1] if interval else datetime.datetime.now()
 
         for s in subscribers:
@@ -115,7 +112,7 @@ class CountdownBot:
             not_to_old = (now - sub_time) <= max_age
             if in_interval:
                 self._print_akademie_countdown(
-                    aka_countdown, s[0],
+                    s[0],
                     pre_text='Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(s[1]))
 
     def dispatch_update(self, update):
@@ -188,23 +185,8 @@ class CountdownBot:
         if self._too_much_spam(update):
             return
 
-        akademien = self.db.get_akademien()
-        aka_countdown = [a for a in akademien if a.date]
-
-        if len(args) > 1:
-            name = args[1].strip()
-            aka_countdown = [a for a in aka_countdown if a.name == name]
-            if len(aka_countdown) == 0:
-                self.tclient.send_message(
-                    'Es ist keine Akademie mit diesem Namen bekannt, oder diese Akademie hat '
-                    'kein Startdatum',
-                    chat_id)
-                return
-
-        if len(aka_countdown) > 0:
-            self._print_akademie_countdown(aka_countdown, chat_id)
-        else:
-            self.tclient.send_message('Es sind noch keine Akademien mit Datum eingespeichert :\'(', chat_id)
+        name = args[1].strip() if len(args) > 1 else None
+        self._print_akademie_countdown(chat_id, name_filter=name)
 
     def _do_subscribe(self, chat_id, args, update):
         """
@@ -403,10 +385,19 @@ class CountdownBot:
 
         return msg_parts
 
-    def _print_akademie_countdown(self, akademien, chat_id=None, pre_text=None, post_text=None):
+    def _print_akademie_countdown(self, chat_id=None, pre_text=None, post_text=None, name_filter=None):
+        akademien = [a for a in self.db.get_akademien() if a.date].sort(key=lambda x: x.date)
+        if name_filter:
+            akademien = (a for a in akademien if a.name == name_filter)
+            if not akademien:
+                self.tclient.send_message('Keine passende Akademie gefunden :\'(', chat_id)
+
+        elif not akademien:
+            self.tclient.send_message('Es sind noch keine Akademien mit Datum eingespeichert :\'(', chat_id)
+
         aka_list = []
 
-        for a in (a for a in sorted(akademien, key=lambda x: x.date)):
+        for a in akademien:
             if a.name.endswith('kademie') or a.name.endswith('Aka'):
                 aka_list.append('Es sind noch {} Tage bis zur {}\n\t-- _{}_\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
