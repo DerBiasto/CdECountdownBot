@@ -37,6 +37,7 @@ class TClient:
         text = urllib.parse.quote_plus(text)
         url = "sendMessage?text={}&chat_id={}".format(text, chat_id)
         if reply_markup:
+            reply_markup = urllib.parse.quote_plus(reply_markup)
             url += "&reply_markup={}".format(reply_markup)
         if parse_mode:
             url += "&parse_mode={}".format(parse_mode)
@@ -46,6 +47,7 @@ class TClient:
         text = urllib.parse.quote_plus(text)
         url = "editMessageText?text={}&chat_id={}&message_id={}".format(text, chat_id, message_id)
         if reply_markup:
+            reply_markup = urllib.parse.quote_plus(reply_markup)
             url += "&reply_markup={}".format(reply_markup)
         self._get_telegram_url(url)
 
