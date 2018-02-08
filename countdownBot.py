@@ -435,7 +435,7 @@ class CountdownBot:
             if a.name.endswith('kademie') or a.name.endswith('Aka'):
                 aka_list.append('Es sind noch {} Tage bis zur {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
-            elif a.name == 'Seminar' or a.name.endswith('Segeln'):
+            elif a.name.endswith('Seminar') or a.name.endswith('Segeln'):
                 aka_list.append('Es sind noch {} Tage bis zum {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
             else:
