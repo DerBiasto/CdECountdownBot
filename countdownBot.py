@@ -67,13 +67,15 @@ def get_last_update_id(updates):
 
 
 class CountdownBot:
-    def __init__(self, db, tclient):
+    def __init__(self, db, tclient, admins):
         """
         Initialize a CountdownBot object using the given database connector and telegram client object
         :param db: A DBHelper to connect to the SQLite database
         :type db: DBHelper
         :param tclient: A TClient to send messages to the Telegram API
         :type tclient: TClient
+        :param admins: A list of chat_ids that have privileged access to execute management operations
+        :type admins: [int]
         """
         self.db = db
         self.tclient = tclient
@@ -343,8 +345,7 @@ class CountdownBot:
                 update["callback_query"]["message"]["chat"]["id"],
                 update["callback_query"]["message_id"])
 
-    @staticmethod
-    def _check_privilege(chat_id):
+    def _check_privilege(self, chat_id):
         """
         Helper function to check if the user denoted by the given chat_id has privileged access to perform management
         functions.
@@ -352,7 +353,7 @@ class CountdownBot:
         :type chat_id: int
         :return: True if the user has privileged access
         """
-        return chat_id == 459053986
+        return chat_id in self.admins
 
     def _print_akademien(self, akademien, chat_id=None):
         """
@@ -431,7 +432,8 @@ def main():
     config = configparser.ConfigParser()
     config.read('config.ini')
     tclient = TClient(config['telegram']['token'])
-    countdown_bot = CountdownBot(db, tclient)
+    admins = [int(x) for x in config['telegram']['admins'].split()]
+    countdown_bot = CountdownBot(db, tclient, admins)
 
     last_update_id = None
     now = datetime.datetime.utcnow().strftime('%H:%M')
