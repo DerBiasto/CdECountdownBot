@@ -33,7 +33,7 @@ class TClient:
         js = self.get_json_from_url(url)
         return js
 
-    def send_message(self, text, chat_id, reply_markup=None, parse_mode=None):
+    def send_message(self, text, chat_id, reply_markup=None, parse_mode="HTML"):
         text = urllib.parse.quote_plus(text)
         url = "sendMessage?text={}&chat_id={}".format(text, chat_id)
         if reply_markup:
@@ -43,7 +43,7 @@ class TClient:
             url += "&parse_mode={}".format(parse_mode)
         self._get_telegram_url(url)
 
-    def edit_message_text(self, text, chat_id, message_id, reply_markup=None):
+    def edit_message_text(self, text, chat_id, message_id, reply_markup="HTML"):
         text = urllib.parse.quote_plus(text)
         url = "editMessageText?text={}&chat_id={}&message_id={}".format(text, chat_id, message_id)
         if reply_markup:
@@ -378,13 +378,13 @@ class CountdownBot:
             if a.date:
                 msg = '{} -- {}'.format(a.name, a.date.strftime('%d.%m.%Y'))
                 msg_parts.append(msg)
-                msg = '\t-- _{}_\n'.format(a.description)
+                msg = '\t-- <i>{}</i>\n'.format(a.description)
                 msg_parts.append(msg)
             else:
-                msg_parts.append('{}\n\t-- _{}_\n'.format(a.name, a.description))
+                msg_parts.append('{}\n\t-- <i>{}</i>\n'.format(a.name, a.description))
 
         if chat_id:
-            self.tclient.send_message("\n".join(msg_parts), chat_id, parse_mode="Markdown")
+            self.tclient.send_message("\n".join(msg_parts), chat_id)
 
         return msg_parts
 
@@ -403,13 +403,13 @@ class CountdownBot:
 
         for a in akademien:
             if a.name.endswith('kademie') or a.name.endswith('Aka'):
-                aka_list.append('Es sind noch {} Tage bis zur {}\n\t-- _{}_\n'
+                aka_list.append('Es sind noch {} Tage bis zur {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
             elif a.name == 'Seminar' or a.name.endswith('Segeln'):
-                aka_list.append('Es sind noch {} Tage bis zum {}\n\t-- _{}_\n'
+                aka_list.append('Es sind noch {} Tage bis zum {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
             else:
-                aka_list.append('Es sind noch {} bis zur Veranstaltung {}\n\t-- _{}_\n'
+                aka_list.append('Es sind noch {} bis zur Veranstaltung {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
 
         msg = '\n'.join(aka_list)
@@ -418,7 +418,7 @@ class CountdownBot:
         if post_text:
             msg = msg + post_text
         if chat_id:
-            self.tclient.send_message(msg, chat_id, parse_mode="Markdown")
+            self.tclient.send_message(msg, chat_id)
 
         return msg
 
