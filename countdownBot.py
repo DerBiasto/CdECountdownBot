@@ -205,7 +205,7 @@ class CountdownBot:
         if self._too_much_spam(update):
             return
 
-        name = args[1].strip() if len(args) > 1 else None
+        name = escape(args[1].strip()) if len(args) > 1 else None
         self._print_akademie_countdown(chat_id, name_filter=name)
 
     def _do_subscribe(self, chat_id, args, update):
