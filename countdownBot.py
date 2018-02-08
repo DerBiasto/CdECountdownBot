@@ -126,6 +126,7 @@ class CountdownBot:
         """
         command_handlers = {
             '/start': self._do_start,
+            '/help': self._do_help,
             '/list': self._do_list,
             '/countdown': self._do_countdown,
             '/subscribe': self._do_subscribe,
@@ -149,6 +150,7 @@ class CountdownBot:
             try:
                 command_handlers[command](chat_id, args, update)
             except KeyError:
+                self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
                 pass
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
@@ -158,13 +160,30 @@ class CountdownBot:
                 callback_handlers[command](chat_id, args, update)
             except KeyError:
                 pass
-
+    
     def _do_start(self, chat_id, args, update):
         """
         Handle a /start command. Just send a 'hello' to the user.
         """
         self.tclient.send_message(
             'Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chat_id)
+
+    def _do_help(self, chat_id, args, update):
+        """
+        Handle a /start command. Just send a 'hello' to the user.
+        """
+        self.tclient.send_message(
+            '/start - Initialisiere den Bot.\n'
+            '/help - Zeige diese Liste an.\n'
+            '/list - Liste alle gespeicherten Veranstaltungen alphabetisch auf.\n'
+            '/countdown - Erstelle einen Countdown zu allen mit Datum gespeicherten Veranstaltungen. Alternativ kann der Name einer Veranstaltung angegeben werden und der Countdown wird nur zu dieser Veranstaltung erstellt.\n'
+            '/subscribe - Abonniere tägliche Countdowns um eine bestimmte Uhrzeit (HH:MM) (UTC).\n'
+            '/unsubscribe - Entferne alle Abonnements für diesen Chat.\n'
+            '/now - Gib die aktuelle Uhrzeit (UTC) aus.\n'
+            '/add_akademie - Füge eine neue Veranstaltung hinzu. (Nur mit Administratorrechten möglich).\n'
+            '/delete_akademie - Lösche eine existierende Veranstaltung. (Nur mit Administratorrechten möglich).\n'
+            '/edit_akademie - Editiere eine existierende Veranstaltung. (Nur mit Administratorrechten möglich).\n'
+            , chat_id)
 
     def _do_list(self, chat_id, args, update):
         """
