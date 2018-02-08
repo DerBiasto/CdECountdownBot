@@ -79,7 +79,7 @@ class CountdownBot:
         :type db: DBHelper
         :param tclient: A TClient to send messages to the Telegram API
         :type tclient: TClient
-        :param admins: A list of chat_ids that have privileged access to execute management operations
+        :param admins: A list of user_ids that have privileged access to execute management operations
         :type admins: [int]
         """
         self.db = db
@@ -392,10 +392,10 @@ class CountdownBot:
 
     def _check_privilege(self, user_id):
         """
-        Helper function to check if the user denoted by the given chat_id has privileged access to perform management
+        Helper function to check if the user denoted by the given user_id has privileged access to perform management
         functions.
-        :param chat_id: The chat_id to check for privileged access
-        :type chat_id: int
+        :param user_id: The user_id to check for privileged access
+        :type user_id: int
         :return: True if the user has privileged access
         """
         return user_id in self.admins

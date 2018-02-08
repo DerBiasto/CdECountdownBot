@@ -14,7 +14,7 @@ cp config.ini.sample config.ini
 $EDITOR config.ini
 ```
 
-Insert Telegram API token and space-seperated list of admin chat_ids into config.ini.
+Insert Telegram API token and space-seperated list of admin user_ids into config.ini.
 
 ## Start
 
