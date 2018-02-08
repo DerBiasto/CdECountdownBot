@@ -1,3 +1,7 @@
+[general]
+interval_sub = 60
+max_age_sub  = 1800
+
 [telegram]
 token = id:key
 admins = 0123456789 9876543210

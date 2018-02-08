@@ -80,22 +80,43 @@ class CountdownBot:
         self.db = db
         self.tclient = tclient
 
-    def send_subscriptions(self, subscription, force=False):
+    def send_subscriptions(self, subscription, interval=None, max_age=datetime.timedelta(minutes=5)):
+        """
+        Send countdown messages to subscribers. By default this method sends a message for each subscription that was
+        due within the last five minutes. To enlarge this period, pass another value for `max_age`. Additionally
+        subscriptions can be filtered to be within a time interval. This should be used for periodic evauluation of this
+        function.
+
+        :param subscription: ?
+        :type subscription: str
+        :param interval: An interval between the last check/sending of subscriptions and now. Only subscriptions in this
+                         interval are processed. To force sending of all subscriptions, use None.
+        :type interval: (datetime.datetime, datetime.datetime) or None
+        :param max_age: Maximum age of a subscription to send. To send all subscriptions, set to datetime.timedelta.max
+        :type max_age: datetime.timedelta
+        """
         # print("sending Subscriptions")
 
         subscribers = self.db.get_subscriptions(subscription)
-        now = datetime.datetime.utcnow().strftime('%H:%M')
 
         akademien = self.db.get_akademien()
         aka_countdown = [a for a in akademien if a.date]
 
+        now = interval[1] if interval else datetime.datetime.now()
+
         for s in subscribers:
-            # print(s)
-            if s[1] == now or force:
-                # print('Send to this Subscriber')
+            # Get last subscription of the subscriber
+            sub_time = datetime.datetime.combine(interval[1].date(), datetime.datetime.strptime(s[1], "%H:%M").time())
+            if sub_time > now:
+                sub_time -= datetime.timedelta(days=1)
+
+            # Check if subscription was in interval
+            in_interval = interval is not None and interval[0] < sub_time <= interval[1]
+            not_to_old = (now - sub_time) <= max_age
+            if in_interval:
                 self._print_akademie_countdown(
                     aka_countdown, s[0],
-                    pre_text='Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(now))
+                    pre_text='Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(s[1]))
 
     def dispatch_update(self, update):
         """
@@ -319,7 +340,7 @@ class CountdownBot:
         """
         Handle a /send_subscriptions command.
         """
-        self.send_subscriptions('1', force=True)
+        self.send_subscriptions('1', max_age=datetime.timedelta.max)
 
     def _do_get_subscriptions(self, chat_id, args, update):
         """
@@ -436,17 +457,25 @@ def main():
     countdown_bot = CountdownBot(db, tclient, admins)
 
     last_update_id = None
-    now = datetime.datetime.utcnow().strftime('%H:%M')
+    last_subscription_send = datetime.datetime.min
+    subscription_interval = datetime.timedelta(seconds=float(config['general'].get('interval_sub', 60)))
+    subscription_max_age = datetime.timedelta(seconds=float(config['general'].get('max_age_sub', 1800)))
     while True:
         updates = tclient.get_updates(last_update_id)
         try:
+            # Process updates from Telegram
             if len(updates["result"]) > 0:
                 last_update_id = get_last_update_id(updates) + 1
-                for update in updates:
+                for update in updates["result"]:
                     countdown_bot.dispatch_update(update)
-            if now != datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M'):
-                now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-                countdown_bot.send_subscriptions('1')
+
+            # Send subscriptions (if subscription_interval since last check)
+            now = datetime.datetime.utcnow()
+            if (now - last_subscription_send) > subscription_interval:
+                countdown_bot.send_subscriptions('1', (last_subscription_send, now), subscription_max_age)
+                last_subscription_send = now
+
+            # Sleep for half a second
             time.sleep(0.5)
         except KeyError:
             pass
