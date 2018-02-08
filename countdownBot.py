@@ -109,7 +109,7 @@ class CountdownBot:
                 sub_time -= datetime.timedelta(days=1)
 
             # Check if subscription was in interval
-            in_interval = interval is not None or interval[0] < sub_time <= interval[1]
+            in_interval = interval is None or interval[0] < sub_time <= interval[1]
             not_too_old = (now - sub_time) <= max_age
             if in_interval and not_too_old:
                 self._print_akademie_countdown(
