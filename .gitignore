@@ -1,4 +1,6 @@
 /env
 /pip-selfcheck.json
-akademien.sqlite
-config.ini
+/akademien.sqlite
+/config.ini
+__pycache__/
+/.idea/
