@@ -106,7 +106,7 @@ class CountdownBot:
 
         for s in subscribers:
             # Get last subscription of the subscriber
-            sub_time = datetime.datetime.combine(now.date(), datetime.datetime.strptime(s[1], "%H:%M").time())
+            sub_time = datetime.datetime.combine(now.date(), datetime.datetime.strptime(s[1], "%H:%M:%S").time())
             if sub_time > now:
                 sub_time -= datetime.timedelta(days=1)
 
@@ -134,7 +134,9 @@ class CountdownBot:
             '/now': self._do_now,
             '/add_akademie': self._do_add,
             '/delete_akademie': self._do_delete,
-            '/edit_akademie': self._do_edit
+            '/edit_akademie': self._do_edit,
+            '/send_subscriptions': self._do_send_subscriptions,
+            '/get_subscriptions': self._do_get_subscriptions
         }
         callback_handlers = {
             '/delete_akademie': self._callback_delete
@@ -216,7 +218,7 @@ class CountdownBot:
         """
         if len(args) > 1:
             try:
-                t = datetime.datetime.strptime(args[1], '%H:%M').strftime('%H:%M')
+                t = datetime.datetime.strptime(args[1], '%H:%M').strftime('%H:%M:%S')
                 self.db.add_subcription(chat_id, '1', t)
                 self.tclient.send_message(
                     'Countdownbenachrichtigungen für täglich {} Uhr(UTC) erfolgreich abonniert!'
@@ -229,7 +231,7 @@ class CountdownBot:
                     chat_id)
         else:
             self.db.add_subcription(chat_id, '1')
-            self.tclient.send_message('Tägliche Benachrichtigungen für 06:00 Uhr(UTC)'
+            self.tclient.send_message('Tägliche Benachrichtigungen für 06:00 Uhr(UTC) '
                                       'erfolgreich abonniert!',
                                       chat_id)
 

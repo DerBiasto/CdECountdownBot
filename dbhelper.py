@@ -80,8 +80,9 @@ class DBHelper:
         self.c.commit()
 
     def add_subcription(self, chat_id, subscriptions, time='06:00:00'):
+        
         if not self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ? AND time = ?",
-                              (chat_id, time)):
+                              (chat_id, time)).fetchone():
             q = "INSERT INTO subscribers (chatID, subscriptions, time) VALUES (?, ?, ?)"
             args = (chat_id, subscriptions, time)
             self.c.execute(q, args)
