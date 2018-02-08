@@ -232,7 +232,9 @@ class CountdownBot:
         """
         Handle an /add_akademie command.
         """
-        if not self._check_privilege(chat_id):
+        user_id = update["message"]["from"]["id"]
+        
+        if not self._check_privilege(user_id):
             self.tclient.send_message(
                 'Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/',
                 chat_id)
@@ -275,7 +277,9 @@ class CountdownBot:
         """
         Handle an /delete_akademie command.
         """
-        if not self._check_privilege(chat_id):
+        user_id = update["message"]["from"]["id"]
+        
+        if not self._check_privilege(user_id):
             self.tclient.send_message(
                 'Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/',
                 chat_id)
@@ -292,7 +296,9 @@ class CountdownBot:
         """
         Handle an /edit_akademie command.
         """
-        if not self._check_privilege(chat_id):
+        user_id = update["message"]["from"]["id"]
+        
+        if not self._check_privilege(user_id):
             self.tclient.send_message(
                 'Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/',
                 chat_id)
@@ -337,21 +343,26 @@ class CountdownBot:
         """
         Handle the callback request of a /delete_akademie command.
         """
-        if not self._check_privilege(chat_id):
+        cq = update["callback_query"]
+        user_id = cq["from"]["id"]
+        chat_id = cq["message"]["chat"]["id"]
+        msg_id = cq["message"]["message_id"]
+        
+        if not self._check_privilege(user_id):
             self.tclient.edit_message_text(
                 'Du hast leider nicht die erforderlichen Berechtigung um diesen Befehl auszuführen :/'.format(args[1]),
-                update["callback_query"]["message"]["chat"]["id"],
-                update["callback_query"]["message"]["message_id"])
+                chat_id,
+                msg_id)
             return
 
         if len(args) > 1:
             self.db.delete_akademie(args[1])
             self.tclient.edit_message_text(
                 'Akademie {} wurde gelöscht'.format(args[1]),
-                update["callback_query"]["message"]["chat"]["id"],
-                update["callback_query"]["message_id"])
+                chat_id,
+                msg_id)
 
-    def _check_privilege(self, chat_id):
+    def _check_privilege(self, user_id):
         """
         Helper function to check if the user denoted by the given chat_id has privileged access to perform management
         functions.
@@ -359,7 +370,7 @@ class CountdownBot:
         :type chat_id: int
         :return: True if the user has privileged access
         """
-        return chat_id in self.admins
+        return user_id in self.admins
 
     def _print_akademien(self, akademien, chat_id=None):
         """
