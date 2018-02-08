@@ -79,6 +79,7 @@ class CountdownBot:
         """
         self.db = db
         self.tclient = tclient
+        self.admins = admins
 
     def send_subscriptions(self, subscription, interval=None, max_age=datetime.timedelta(minutes=5)):
         """
@@ -386,7 +387,8 @@ class CountdownBot:
         return msg_parts
 
     def _print_akademie_countdown(self, chat_id=None, pre_text=None, post_text=None, name_filter=None):
-        akademien = [a for a in self.db.get_akademien() if a.date].sort(key=lambda x: x.date)
+        akademien = [a for a in self.db.get_akademien() if a.date]
+        akademien.sort(key=lambda x: x.date)
         if name_filter:
             akademien = (a for a in akademien if a.name == name_filter)
             if not akademien:
