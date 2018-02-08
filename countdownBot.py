@@ -150,7 +150,8 @@ class CountdownBot:
             try:
                 command_handlers[command](chat_id, args, update)
             except KeyError:
-                self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
+                if command.startswith('/'):
+                    self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
                 pass
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
@@ -170,7 +171,7 @@ class CountdownBot:
 
     def _do_help(self, chat_id, args, update):
         """
-        Handle a /start command. Just send a 'hello' to the user.
+        Handle a /help command. Send a list of all available commands to the user (minus some commands only used for testing).
         """
         self.tclient.send_message(
             '/start - Initialisiere den Bot.\n'
