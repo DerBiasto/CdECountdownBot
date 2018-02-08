@@ -46,12 +46,14 @@ class TClient:
         if not result["ok"]:
             print(result["description"])
 
-    def edit_message_text(self, text, chat_id, message_id, reply_markup="HTML"):
+    def edit_message_text(self, text, chat_id, message_id, reply_markup=None, parse_mode="HTML"):
         text = urllib.parse.quote_plus(text)
         url = "editMessageText?text={}&chat_id={}&message_id={}".format(text, chat_id, message_id)
         if reply_markup:
             reply_markup = urllib.parse.quote_plus(reply_markup)
             url += "&reply_markup={}".format(reply_markup)
+        if parse_mode:
+            url += "&parse_mode={}".format(parse_mode)
         result = self.get_json_from_url(url)
         if not result["ok"]:
             print(result["description"])
