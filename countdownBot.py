@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import logging
+
+import argparse
 import requests
 import json
 import time
@@ -8,6 +11,8 @@ import urllib.parse
 from dbhelper import DBHelper
 import configparser
 from html import escape
+
+logger = logging.getLogger(__name__)
 
 
 class TClient:
@@ -112,6 +117,7 @@ class CountdownBot:
             in_interval = interval is None or interval[0] < sub_time <= interval[1]
             not_too_old = (now - sub_time) <= max_age
             if in_interval and not_too_old:
+                logger.debug("Sending {}-subscription to chat {}".format(s[1], s[0]))
                 self._print_akademie_countdown(
                     s[0],
                     pre_text='Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(s[1]))
@@ -145,23 +151,24 @@ class CountdownBot:
             args = update["message"]["text"].split(' ', 1)
             command = args[0].replace('@cde_akademie_countdown_bot', '')
             chat_id = update["message"]["chat"]["id"]
-
-            # Call command handler function
+            logger.debug("Processing message from chat {}: {}".format(chat_id, update["message"]["text"]))
             try:
                 command_handlers[command](chat_id, args, update)
             except KeyError:
                 if command.startswith('/'):
                     self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
-                pass
+                    logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
             command = args[0].replace('@cde_akademie_countdown_bot', '')
             chat_id = update["callback_query"]["from"]["id"]
+            logger.debug("Processing callback request from chat {}: {}".format(chat_id, update["message"]["text"]))
             try:
                 callback_handlers[command](chat_id, args, update)
             except KeyError:
-                pass
-    
+                logger.error("Callback request for unknown command received: '{}'"
+                             .format(update["callback_query"]["data"]))
+
     def _do_start(self, chat_id, args, update):
         """
         Handle a /start command. Just send a 'hello' to the user.
@@ -337,11 +344,12 @@ class CountdownBot:
                 new_name = escape(new_name.strip())
                 new_description = escape(new_description.strip())
                 new_date = escape(new_date.strip())
-            except:
+            except Exception as e:
                 self.tclient.send_message(
                     'Beim Einlesen deiner Änderung ist ein Fehler aufgetreten :(\n'
                     'Wahrscheinlich hast du zu wenige Argumente angegeben.',
                     chat_id)
+                logger.error("Could not parse arguments of akademie edit: {}".format(args), exc_info=e)
             else:
                 self.db.edit_akademie(name, new_name, new_description, new_date)
                 akademien = self.db.get_akademien()
@@ -454,9 +462,16 @@ class CountdownBot:
         return msg
 
     def _too_much_spam(self, update):
+        """
+        Rate limiting function to prevent users from spamming group conversations with academy listings.
+
+        :param update: The updated which tries to trigger a list or countdown
+        :type update: dict
+        :return: True if this would be too much spam → we should prevent the result from being sent
+        """
         chat_type = update["message"]["chat"]["type"]
         chat_id = update["message"]["chat"]["id"]
-        
+
         if chat_type == "private":
             return False
         elif chat_type == "group" or chat_type == "supergroup":
@@ -467,7 +482,7 @@ class CountdownBot:
             else:
                 delta = datetime.datetime.utcnow() - datetime.datetime.strptime(last_msg[0], '%Y-%m-%d %H:%M:%S.%f')
                 if delta < timedelta(minutes=5):
-                    print("Too much spam in chat {}".format(chat_id))
+                    logger.info("Too much spam in chat {}".format(chat_id))
                     return True
                 self.db.set_last_message_time(chat_id)
                 return False
@@ -476,40 +491,62 @@ class CountdownBot:
 
 
 def main():
+    # Read command line arguments
+    parser = argparse.ArgumentParser(description='CdE Akademie Countdown Bot')
+    parser.add_argument('-c', '--config', default="config.ini",
+                        help="Path of config file. Defaults to 'config.ini'")
+    parser.add_argument('-d', '--database', default='akademien.sqlite',
+                        help="Path of SQLite database. Defaults to 'akademien.sqlite'")
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+                        help="Reduce logging level to provide more verbose log output. "
+                             "(Use twice for even more verbose logging.)")
+    args = parser.parse_args()
+
     # Setup DB
-    db = DBHelper('akademien.sqlite')
+    db = DBHelper(args.database)
     db.setup()
+
+    # Initialize logging
+    logging.basicConfig(level=30 - args.verbose * 10,
+                        format="%(asctime)s [%(levelname)-8s] %(name)s - %(message)s")
 
     # Read configuration and setup Telegram client
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(args.config)
     tclient = TClient(config['telegram']['token'])
     admins = [int(x) for x in config['telegram']['admins'].split()]
     countdown_bot = CountdownBot(db, tclient, admins)
 
+    # Initialize subscription update interval
     last_update_id = None
     last_subscription_send = datetime.datetime.min
     subscription_interval = datetime.timedelta(seconds=float(config['general'].get('interval_sub', 60)))
     subscription_max_age = datetime.timedelta(seconds=float(config['general'].get('max_age_sub', 1800)))
+
+    # Main loop
     while True:
-        updates = tclient.get_updates(last_update_id)
         try:
+            # Wait for updates from Telegram
+            updates = tclient.get_updates(last_update_id)
             # Process updates from Telegram
             if len(updates["result"]) > 0:
                 last_update_id = get_last_update_id(updates) + 1
                 for update in updates["result"]:
                     countdown_bot.dispatch_update(update)
+        except Exception as e:
+            logger.error("Error while processing Telegram updates:", exc_info=e)
 
-            # Send subscriptions (if subscription_interval since last check)
-            now = datetime.datetime.utcnow()
-            if (now - last_subscription_send) > subscription_interval:
+        # Send subscriptions (if subscription_interval since last check)
+        now = datetime.datetime.utcnow()
+        if (now - last_subscription_send) > subscription_interval:
+            try:
                 countdown_bot.send_subscriptions('1', (last_subscription_send, now), subscription_max_age)
-                last_subscription_send = now
+            except Exception as e:
+                logger.error("Error while processing Subscriptions:", exc_info=e)
+            last_subscription_send = now
 
-            # Sleep for half a second
-            time.sleep(0.5)
-        except KeyError:
-            pass
+        # Sleep for half a second
+        time.sleep(0.5)
 
 
 if __name__ == "__main__":

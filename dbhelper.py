@@ -1,6 +1,8 @@
+import logging
 import sqlite3
 import datetime
 
+logger = logging.getLogger(__name__)
 
 class Akademie:
     def __init__(self, name, description="", date=""):
@@ -34,12 +36,14 @@ class DBHelper:
         args = (name, description, date)
         self.c.execute(q, args)
         self.c.commit()
+        logger.info("Created new academy '{}' at {}".format(name, date))
 
     def delete_akademie(self, name):
         q = "DELETE FROM akademien WHERE name = (?)"
         args = (name,)
         self.c.execute(q, args)
         self.c.commit()
+        logger.info("Deleted academy '{}'".format(name))
 
     def edit_akademie(self, name, new_name, new_description, new_date):
         if not self.c.execute("SELECT * FROM akademien WHERE name = ?", (name, )).fetchone(): 
@@ -58,6 +62,7 @@ class DBHelper:
             args = (new_name, name)
             self.c.execute(q, args)
         self.c.commit()
+        logger.info("Edited academy '{}'".format(name))
 
     def get_akademien(self):
         q = "SELECT name, description, date FROM akademien"
@@ -85,13 +90,15 @@ class DBHelper:
     def add_subcription(self, chat_id, subscriptions, time='06:00:00'):
         
         if not self.c.execute("SELECT subscriptions FROM subscribers WHERE chatID = ? AND time = ?",
-                              (chat_id, time)).fetchone():
+                              (chat_id, time))\
+                .fetchone():
             q = "INSERT INTO subscribers (chatID, subscriptions, time) VALUES (?, ?, ?)"
             args = (chat_id, subscriptions, time)
             self.c.execute(q, args)
             self.c.commit()
+            logger.info("Added subscription for {} at {}".format(chat_id, time))
         else:
-            print('Steht bereits in der Subscriberlist')
+            logger.warning("Chat {} has already a subscription for {}".format(chat_id, time))
 
     def remove_subscription(self, chat_id, time=None):
         if time:
@@ -102,6 +109,7 @@ class DBHelper:
             args = (chat_id,)
         self.c.execute(q, args)
         self.c.commit()
+        logger.info("Removed subscriptions of {}{}".format(chat_id, " at {}".format(time) if time else ""))
 
     def get_subscriptions(self, subscriptions):
         q = "SELECT chatID, time FROM subscribers WHERE subscriptions = ?"
