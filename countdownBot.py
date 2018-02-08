@@ -7,6 +7,7 @@ from datetime import timedelta
 import urllib.parse
 from dbhelper import DBHelper
 import configparser
+from html import escape
 
 
 class TClient:
@@ -41,7 +42,9 @@ class TClient:
             url += "&reply_markup={}".format(reply_markup)
         if parse_mode:
             url += "&parse_mode={}".format(parse_mode)
-        self._get_telegram_url(url)
+        result = self.get_json_from_url(url)
+        if not result["ok"]:
+            print(result["description"])
 
     def edit_message_text(self, text, chat_id, message_id, reply_markup="HTML"):
         text = urllib.parse.quote_plus(text)
@@ -49,16 +52,9 @@ class TClient:
         if reply_markup:
             reply_markup = urllib.parse.quote_plus(reply_markup)
             url += "&reply_markup={}".format(reply_markup)
-        self._get_telegram_url(url)
-
-    def echo_all(self, updates):
-        for update in updates["result"]:
-            try:
-                text = update["message"]["text"]
-                chat_id = update["message"]["chat"]["id"]
-                self.send_message(text, chat_id)
-            except Exception as e:
-                print(e)
+        result = self.get_json_from_url(url)
+        if not result["ok"]:
+            print(result["description"])
 
 
 def get_last_update_id(updates):
@@ -279,9 +275,9 @@ class CountdownBot:
                     description = ''
                     date = ''
 
-            name = name.strip()
-            description = description.strip()
-            date = date.strip()
+            name = escape(name.strip())
+            description = escape(description.strip())
+            date = escape(date.strip())
 
             for a in akademien:
                 if a.name == name:
@@ -334,10 +330,10 @@ class CountdownBot:
         else:
             try:
                 name, new_name, new_description, new_date = args[1].split(';', 3)
-                name = name.strip()
-                new_name = new_name.strip()
-                new_description = new_description.strip()
-                new_date = new_date.strip()
+                name = escape(name.strip())
+                new_name = escape(new_name.strip())
+                new_description = escape(new_description.strip())
+                new_date = escape(new_date.strip())
             except:
                 self.tclient.send_message(
                     'Beim Einlesen deiner Änderung ist ein Fehler aufgetreten :(\n'
