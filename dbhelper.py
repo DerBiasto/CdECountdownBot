@@ -42,6 +42,9 @@ class DBHelper:
         self.c.commit()
 
     def edit_akademie(self, name, new_name, new_description, new_date):
+        if not self.c.execute("SELECT * FROM akademien WHERE name = ?", (name, )).fetchone(): 
+            print('Keine Akademie unter diesem Namen gefunden.')
+            return
         if new_date != '':
             q = "UPDATE akademien SET date = ? WHERE name = ?"
             args = (new_date, name)
