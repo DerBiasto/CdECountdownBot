@@ -423,20 +423,25 @@ class CountdownBot:
         return msg
 
     def _too_much_spam(self, update):
-        if update["message"]["chat"]["type"] == "private":
+        chat_type = update["message"]["chat"]["type"]
+        chat_id = update["message"]["chat"]["id"]
+        
+        if chat_type == "private":
             return False
-        elif update["message"]["chat"]["type"] == "group" or update["message"]["chat"]["type"] == "supergroup":
-            last_msg = self.db.get_last_message_time(update["message"]["chat"]["id"])
+        elif chat_type == "group" or chat_type == "supergroup":
+            last_msg = self.db.get_last_message_time(chat_id)
             if not last_msg:
-                self.db.set_last_message_time(update["message"]["chat"]["id"])
+                self.db.set_last_message_time(chat_id)
                 return False
             else:
                 delta = datetime.datetime.utcnow() - datetime.datetime.strptime(last_msg[0], '%Y-%m-%d %H:%M:%S.%f')
                 if delta < timedelta(minutes=5):
-                    print("Too much spam in chat {}".format(update["message"]["chat"]["id"]))
+                    print("Too much spam in chat {}".format(chat_id))
                     return True
-                self.db.set_last_message_time(update["message"]["chat"]["id"])
+                self.db.set_last_message_time(chat_id)
                 return False
+        else:
+            return False
 
 
 def main():
