@@ -104,14 +104,14 @@ class CountdownBot:
 
         for s in subscribers:
             # Get last subscription of the subscriber
-            sub_time = datetime.datetime.combine(interval[1].date(), datetime.datetime.strptime(s[1], "%H:%M").time())
+            sub_time = datetime.datetime.combine(now.date(), datetime.datetime.strptime(s[1], "%H:%M").time())
             if sub_time > now:
                 sub_time -= datetime.timedelta(days=1)
 
             # Check if subscription was in interval
-            in_interval = interval is not None and interval[0] < sub_time <= interval[1]
-            not_to_old = (now - sub_time) <= max_age
-            if in_interval:
+            in_interval = interval is not None or interval[0] < sub_time <= interval[1]
+            not_too_old = (now - sub_time) <= max_age
+            if in_interval and not_too_old:
                 self._print_akademie_countdown(
                     s[0],
                     pre_text='Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(s[1]))
