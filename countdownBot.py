@@ -20,24 +20,33 @@ class TClient:
 
     def __init__(self, token):
         self.token = token
+        self.last_update_id = None
 
-    def _get_telegram_url(self, url):
-        response = requests.get(self.URL.format(self.token, url))
-        content = response.content.decode("utf8")
-        return content
+    def _get_json_from_url(self, url):
+        try:
+            response = requests.get(self.URL.format(self.token, url))
+            content = response.content.decode("utf8")
+            js = json.loads(content)
+        except Exception as e:
+            logger.error("Error while trying to access Telegram url '{}':".format(url), exc_info=e)
+            return {}
 
-    def get_json_from_url(self, url):
-        content = self._get_telegram_url(url)
-        js = json.loads(content)
         return js
 
-    def get_updates(self, offset=None, timeout=10):
+    def get_updates(self, timeout):
         url = "getUpdates?timeout={}".format(timeout)
-        if offset:
-            url += "&offset={}".format(offset)
-        # print(url)
-        js = self.get_json_from_url(url)
-        return js
+        if self.last_update_id:
+            url += "&offset={}".format(self.last_update_id)
+        result = self._get_json_from_url(url)
+
+        # Log and Return on error
+        if 'ok' not in result or not result['ok']:
+            logger.error("Error while fetching Telegram updates: {}".format(
+                result['description'] if 'description' in result else '-- unknown --'))
+            return []
+
+        self.last_update_id = self._get_last_update_id(result['result']) + 1
+        return result['result']
 
     def send_message(self, text, chat_id, reply_markup=None, parse_mode="HTML"):
         text = urllib.parse.quote_plus(text)
@@ -47,9 +56,12 @@ class TClient:
             url += "&reply_markup={}".format(reply_markup)
         if parse_mode:
             url += "&parse_mode={}".format(parse_mode)
-        result = self.get_json_from_url(url)
-        if not result["ok"]:
-            print(result["description"])
+        result = self._get_json_from_url(url)
+
+        # Check result and log errors
+        if 'ok' not in result or not result['ok']:
+            logger.error("Error while sending message to Telegram API: {}".format(
+                result['description'] if 'description' in result else '-- unknown --'))
 
     def edit_message_text(self, text, chat_id, message_id, reply_markup=None, parse_mode="HTML"):
         text = urllib.parse.quote_plus(text)
@@ -59,16 +71,16 @@ class TClient:
             url += "&reply_markup={}".format(reply_markup)
         if parse_mode:
             url += "&parse_mode={}".format(parse_mode)
-        result = self.get_json_from_url(url)
-        if not result["ok"]:
-            print(result["description"])
+        result = self._get_json_from_url(url)
 
+        # Check result and log errors
+        if 'ok' not in result or not result['ok']:
+            logger.error("Error while editing message via Telegram API: {}".format(
+                result['description'] if 'description' in result else '-- unknown --'))
 
-def get_last_update_id(updates):
-    update_ids = []
-    for update in updates["result"]:
-        update_ids.append(update["update_id"])
-    return max(update_ids)
+    @staticmethod
+    def _get_last_update_id(updates):
+        return max(u['update_id'] for u in updates)
 
 
 class CountdownBot:
@@ -122,7 +134,23 @@ class CountdownBot:
                     s[0],
                     pre_text='Dies ist deine für {} Uhr(UTC) abonnierte Nachricht:\n\n'.format(s[1]))
 
-    def dispatch_update(self, update):
+    def await_and_process_updates(self, timeout=10):
+        """
+        Use the TClient's `get_updates()` method to poll the Telegram API for updates and process them afterwards.
+
+        :param timeout: How long to wait on the Telegram API for updates (in seconds)
+        :type timeout: int
+        """
+        # Wait for updates from Telegram
+        updates = self.tclient.get_updates(timeout=timeout)
+        # Process updates
+        for update in updates:
+            try:
+                self._dispatch_update(update)
+            except Exception as e:
+                logger.error("Error while processing a Telegram update:", exc_info=e)
+
+    def _dispatch_update(self, update):
         """
         Process an update received from the Telegram API in the context of this Bot.
         :param update: A Telegram update to be processed
@@ -525,16 +553,8 @@ def main():
 
     # Main loop
     while True:
-        try:
-            # Wait for updates from Telegram
-            updates = tclient.get_updates(last_update_id)
-            # Process updates from Telegram
-            if len(updates["result"]) > 0:
-                last_update_id = get_last_update_id(updates) + 1
-                for update in updates["result"]:
-                    countdown_bot.dispatch_update(update)
-        except Exception as e:
-            logger.error("Error while processing Telegram updates:", exc_info=e)
+        # Wait for Telegram updates (up to 10 seconds) and process them
+        countdown_bot.await_and_process_updates(timeout=10)
 
         # Send subscriptions (if subscription_interval since last check)
         now = datetime.datetime.utcnow()
