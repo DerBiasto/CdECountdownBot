@@ -31,7 +31,7 @@ class TClient:
         js = json.loads(content)
         return js
 
-    def get_updates(self, offset=None, timeout=10):
+    def get_updates(self, offset=None, timeout=120):
         url = "getUpdates?timeout={}".format(timeout)
         if offset:
             url += "&offset={}".format(offset)
