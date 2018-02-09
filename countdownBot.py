@@ -45,7 +45,8 @@ class TClient:
                 result['description'] if 'description' in result else '-- unknown --'))
             return []
 
-        self.last_update_id = self._get_last_update_id(result['result']) + 1
+        if result['result']:
+            self.last_update_id = self._get_last_update_id(result['result']) + 1
         return result['result']
 
     def send_message(self, text, chat_id, reply_markup=None, parse_mode="HTML"):
