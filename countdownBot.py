@@ -162,7 +162,7 @@ class CountdownBot:
             args = update["callback_query"]["data"].split(' ', 1)
             command = args[0].replace('@cde_akademie_countdown_bot', '')
             chat_id = update["callback_query"]["from"]["id"]
-            logger.debug("Processing callback request from chat {}: {}".format(chat_id, update["message"]["text"]))
+            logger.debug("Processing callback request from chat {}: {}".format(chat_id, update["callback_query"]["data"]))
             try:
                 callback_handlers[command](chat_id, args, update)
             except KeyError:
