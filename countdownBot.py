@@ -58,7 +58,7 @@ class TClient:
         if parse_mode:
             url += "&parse_mode={}".format(parse_mode)
         result = self._get_json_from_url(url)
-
+        
         # Check result and log errors
         if 'ok' not in result or not result['ok']:
             logger.error("Error while sending message to Telegram API: {}".format(
@@ -451,7 +451,7 @@ class CountdownBot:
             else:
                 msg_parts.append('{}\n\t-- <i>{}</i>\n'.format(a.name, a.description))
 
-        if chat_id:
+        if chat_id and msg_parts != []:
             self.tclient.send_message("\n".join(msg_parts), chat_id)
 
         return msg_parts
@@ -463,9 +463,11 @@ class CountdownBot:
             akademien = (a for a in akademien if a.name == name_filter)
             if not akademien:
                 self.tclient.send_message('Keine passende Akademie gefunden :\'(', chat_id)
+                return
 
         elif not akademien:
             self.tclient.send_message('Es sind noch keine Akademien mit Datum eingespeichert :\'(', chat_id)
+            return
 
         aka_list = []
 
