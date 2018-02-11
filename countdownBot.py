@@ -479,7 +479,7 @@ class CountdownBot:
                 aka_list.append('Es sind noch {} Tage bis zum {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
             else:
-                aka_list.append('Es sind noch {} bis zur Veranstaltung {}\n\t-- <i>{}</i>\n'
+                aka_list.append('Es sind noch {} Tage bis zur Veranstaltung {}\n\t-- <i>{}</i>\n'
                                 .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
 
         msg = '\n'.join(aka_list)
