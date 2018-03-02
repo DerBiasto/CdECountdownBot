@@ -63,6 +63,17 @@ class TClient:
         if 'ok' not in result or not result['ok']:
             logger.error("Error while sending message to Telegram API: {}".format(
                 result['description'] if 'description' in result else '-- unknown --'))
+                
+    def send_sticker(self, sticker, chat_id):
+        url = "sendSticker?sticker={}&chat_id={}".format(sticker, chat_id)
+        result = self._get_json_from_url(url)
+        
+        # Check result and log errors
+        if 'ok' not in result or not result['ok']:
+            logger.error("Error while sending Sticker to Telegram API: {}".format(
+                result['description'] if 'description' in result else '-- unknown --'))
+        
+        
 
     def edit_message_text(self, text, chat_id, message_id, reply_markup=None, parse_mode="HTML"):
         text = urllib.parse.quote_plus(text)
@@ -470,17 +481,35 @@ class CountdownBot:
             return
 
         aka_list = []
+        sticker_list = []
 
         for a in akademien:
-            if a.name.endswith('kademie') or a.name.endswith('Aka'):
-                aka_list.append('Es sind noch {} Tage bis zur {}\n\t-- <i>{}</i>\n'
-                                .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
-            elif a.name.endswith('Seminar') or a.name.endswith('Segeln'):
-                aka_list.append('Es sind noch {} Tage bis zum {}\n\t-- <i>{}</i>\n'
-                                .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
-            else:
-                aka_list.append('Es sind noch {} Tage bis zur Veranstaltung {}\n\t-- <i>{}</i>\n'
-                                .format((a.date - datetime.datetime.today().date()).days, a.name, a.description))
+            days_left = (a.date - datetime.datetime.today().date()).days
+            if days_left == 1:
+                if a.name.endswith('kademie') or a.name.endswith('Aka'):
+                    aka_list.append('Die {} beginnt morgen!\n\t-- <i>{}</i>\n'.format(a.name, a.description))
+                elif a.name.endswith('Seminar') or a.name.endswith('Segeln'):
+                    aka_list.append('Das {} beginnt morgen!\n\t-- <i>{}</i>\n'.format(a.name, a.description))
+                else:
+                    aka_list.append('{} beginnt morgen!\n\t-- <i>{}</i>\n'.format(a.name, a.description))
+            elif days_left == 0:
+                if a.name.endswith('kademie') or a.name.endswith('Aka'):
+                    aka_list.append('Die {} beginnt heute!\n\t-- <i>{}</i>\n'.format(a.name, a.description))
+                elif a.name.endswith('Seminar') or a.name.endswith('Segeln'):
+                    aka_list.append('Das {} beginnt heute!\n\t-- <i>{}</i>\n'.format(a.name, a.description))
+                else:
+                    aka_list.append('{} beginnt heute!\n\t-- <i>{}</i>\n'.format(a.name, a.description))
+                sticker_list.append('CAADAgADMQEAApfhEwS9lediF-kwxQI')
+            elif days_left > 1:
+                if a.name.endswith('kademie') or a.name.endswith('Aka'):
+                    aka_list.append('Es sind noch {} Tage bis zur {}\n\t-- <i>{}</i>\n'
+                                    .format(days_left, a.name, a.description))
+                elif a.name.endswith('Seminar') or a.name.endswith('Segeln'):
+                    aka_list.append('Es sind noch {} Tage bis zum {}\n\t-- <i>{}</i>\n'
+                                    .format(days_left, a.name, a.description))
+                else:
+                    aka_list.append('Es sind noch {} Tage bis zur Veranstaltung {}\n\t-- <i>{}</i>\n'
+                                    .format(days_left, a.name, a.description))
 
         msg = '\n'.join(aka_list)
         if pre_text:
@@ -489,6 +518,8 @@ class CountdownBot:
             msg = msg + post_text
         if chat_id:
             self.tclient.send_message(msg, chat_id)
+            for sticker in sticker_list:
+                self.tclient.send_sticker(sticker, chat_id)
 
         return msg
 
