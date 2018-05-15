@@ -196,7 +196,7 @@ class CountdownBot:
                 command_handlers[command](chat_id, args, update)
             except KeyError:
                 if command.startswith('/'):
-                    self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
+                    #self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
                     logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
