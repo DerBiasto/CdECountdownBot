@@ -180,7 +180,8 @@ class CountdownBot:
             '/delete_akademie': self._do_delete,
             '/edit_akademie': self._do_edit,
             '/send_subscriptions': self._do_send_subscriptions,
-            '/get_subscriptions': self._do_get_subscriptions
+            '/get_subscriptions': self._do_get_subscriptions,
+            '/workshop': self._do_sarcastic_response
         }
         callback_handlers = {
             '/delete_akademie': self._callback_delete
@@ -189,7 +190,7 @@ class CountdownBot:
         if "message" in update.keys():
             # Parse command
             args = update["message"]["text"].split(' ', 1)
-            command = args[0].replace('@cde_akademie_countdown_bot', '')
+            command = args[0].replace('@cde_akademie_countdown_bot', '').lower()
             chat_id = update["message"]["chat"]["id"]
             logger.debug("Processing message from chat {}: {}".format(chat_id, update["message"]["text"]))
             try:
@@ -215,6 +216,18 @@ class CountdownBot:
         """
         self.tclient.send_message(
             'Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chat_id)
+            
+    def _do_sarcastic_response(self, chat_id, args, update):
+		
+        # Do rate limit for group chat spam protection
+        if self._too_much_spam(update):
+            return
+        
+        user_first_name = update["message"]["from"]["first_name"]
+        user_last_name = update["message"]["from"]["last_name"] if "last_name" in update["message"]["from"] else ''
+        user_name = user_first_name + (' ' + user_last_name if user_last_name != '' else '')
+        
+        self.tclient.send_message('🙄 {} spammt schon wieder!'.format(user_name), chat_id)
 
     def _do_help(self, chat_id, args, update):
         """
