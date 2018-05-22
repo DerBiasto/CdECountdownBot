@@ -96,7 +96,7 @@ class TClient:
 
 
 class CountdownBot:
-	def __init__(self, db, tclient, admins):
+	def __init__(self, db, tclient, admins, spam_protection_time):
 		"""
 		Initialize a CountdownBot object using the given database connector and telegram client object
 		:param db: A DBHelper to connect to the SQLite database
@@ -109,6 +109,7 @@ class CountdownBot:
 		self.db = db
 		self.tclient = tclient
 		self.admins = admins
+		self.spam_protection_time = spam_protection_time
 
 	def send_subscriptions(self, subscription, interval=None, max_age=datetime.timedelta(minutes=5)):
 		"""
@@ -559,7 +560,7 @@ class CountdownBot:
 				return False
 			else:
 				delta = datetime.datetime.utcnow() - datetime.datetime.strptime(last_msg[0], '%Y-%m-%d %H:%M:%S.%f')
-				if delta < spam_protection_time:
+				if delta < self.spam_protection_time:
 					logger.info("Too much spam in chat {}".format(chat_id))
 					return True
 				self.db.set_last_message_time(chat_id)
@@ -593,16 +594,14 @@ def main():
 	config.read(args.config)
 	tclient = TClient(config['telegram']['token'])
 	admins = [int(x) for x in config['telegram']['admins'].split()]
-	countdown_bot = CountdownBot(db, tclient, admins)
+	spam_protection_time = datetime.timedelta(seconds=float(config['general'].get('spam_protection', 300)))
+	countdown_bot = CountdownBot(db, tclient, admins, spam_protection_time)
 
 	# Initialize subscription update interval
 	last_update_id = None
 	last_subscription_send = datetime.datetime.min
 	subscription_interval = datetime.timedelta(seconds=float(config['general'].get('interval_sub', 60)))
 	subscription_max_age = datetime.timedelta(seconds=float(config['general'].get('max_age_sub', 1800)))
-	
-	# Initialize spam protection
-	spam_protection_time = datetime.timedelta(seconds=float(config['general'].get('spam_protection', 300)))
 
 	# Main loop
 	while True:
