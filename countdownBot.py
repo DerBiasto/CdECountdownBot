@@ -219,7 +219,9 @@ class CountdownBot:
             'Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chat_id)
             
     def _do_sarcastic_response(self, chat_id, args, update):
-		
+		"""
+		Respond to certain Easteregg commands 
+		"""
         # Do rate limit for group chat spam protection
         if self._too_much_spam(update):
             return
@@ -557,7 +559,7 @@ class CountdownBot:
                 return False
             else:
                 delta = datetime.datetime.utcnow() - datetime.datetime.strptime(last_msg[0], '%Y-%m-%d %H:%M:%S.%f')
-                if delta < timedelta(minutes=5):
+                if delta < spam_protection_time:
                     logger.info("Too much spam in chat {}".format(chat_id))
                     return True
                 self.db.set_last_message_time(chat_id)
@@ -598,6 +600,9 @@ def main():
     last_subscription_send = datetime.datetime.min
     subscription_interval = datetime.timedelta(seconds=float(config['general'].get('interval_sub', 60)))
     subscription_max_age = datetime.timedelta(seconds=float(config['general'].get('max_age_sub', 1800)))
+	
+	# Initialize spam protection
+	spam_protection_time = datetime.timedelta(seconds=float(config['general'].get('spam_protection', 300)))
 
     # Main loop
     while True:
