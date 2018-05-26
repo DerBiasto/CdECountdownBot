@@ -182,7 +182,7 @@ class CountdownBot:
 			'/edit_akademie': self._do_edit,
 			'/send_subscriptions': self._do_send_subscriptions,
 			'/get_subscriptions': self._do_get_subscriptions,
-			'/workshop': self._do_sarcastic_response
+			#'/workshop': self._do_sarcastic_response,
 		}
 		callback_handlers = {
 			'/delete_akademie': self._callback_delete
