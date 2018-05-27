@@ -182,7 +182,7 @@ class CountdownBot:
 			'/edit_akademie': self._do_edit,
 			'/send_subscriptions': self._do_send_subscriptions,
 			'/get_subscriptions': self._do_get_subscriptions,
-			#'/workshop': self._do_sarcastic_response,
+			'/workshop': self._do_sarcastic_response,
 		}
 		callback_handlers = {
 			'/delete_akademie': self._callback_delete
@@ -198,7 +198,7 @@ class CountdownBot:
 				command_handlers[command](chat_id, args, update)
 			except KeyError:
 				if command.startswith('/'):
-					if not self._too_much_spam(update):
+					if not self._is_group(update):
 						self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
 					logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
 		elif "callback_query" in update.keys():
@@ -216,15 +216,15 @@ class CountdownBot:
 		"""
 		Handle a /start command. Just send a 'hello' to the user.
 		"""
-		self.tclient.send_message(
-			'Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chat_id)
+		if not self._too_much_spam(update):
+			self.tclient.send_message('Hallo! Ich bin ein Bot, um die Tage bis zur nächsten CdE Akademie zu zählen!', chat_id)
 			
 	def _do_sarcastic_response(self, chat_id, args, update):
 		"""
 		Respond to certain Easteregg commands 
 		"""
-		# Do rate limit for group chat spam protection
-		if self._too_much_spam(update):
+		# Do not do this in groups
+		if self._is_group(update):
 			return
 		
 		user_first_name = update["message"]["from"]["first_name"]
@@ -237,18 +237,19 @@ class CountdownBot:
 		"""
 		Handle a /help command. Send a list of all available commands to the user (minus some commands only used for testing).
 		"""
-		self.tclient.send_message(
-			'/start - Initialisiere den Bot.\n'
-			'/help - Zeige diese Liste an.\n'
-			'/list - Liste alle gespeicherten Veranstaltungen alphabetisch auf.\n'
-			'/countdown - Erstelle einen Countdown zu allen mit Datum gespeicherten Veranstaltungen. Alternativ kann der Name einer Veranstaltung angegeben werden und der Countdown wird nur zu dieser Veranstaltung erstellt.\n'
-			'/subscribe - Abonniere tägliche Countdowns um eine bestimmte Uhrzeit (HH:MM) (UTC).\n'
-			'/unsubscribe - Entferne alle Abonnements für diesen Chat.\n'
-			'/now - Gib die aktuelle Uhrzeit (UTC) aus.\n'
-			'/add_akademie - Füge eine neue Veranstaltung hinzu. (Nur mit Administratorrechten möglich).\n'
-			'/delete_akademie - Lösche eine existierende Veranstaltung. (Nur mit Administratorrechten möglich).\n'
-			'/edit_akademie - Editiere eine existierende Veranstaltung. (Nur mit Administratorrechten möglich).\n'
-			, chat_id)
+		if not self._too_much_spam(update):
+			self.tclient.send_message(
+				'/start - Initialisiere den Bot.\n'
+				'/help - Zeige diese Liste an.\n'
+				'/list - Liste alle gespeicherten Veranstaltungen alphabetisch auf.\n'
+				'/countdown - Erstelle einen Countdown zu allen mit Datum gespeicherten Veranstaltungen. Alternativ kann der Name einer Veranstaltung angegeben werden und der Countdown wird nur zu dieser Veranstaltung erstellt.\n'
+				'/subscribe - Abonniere tägliche Countdowns um eine bestimmte Uhrzeit (HH:MM) (UTC).\n'
+				'/unsubscribe - Entferne alle Abonnements für diesen Chat.\n'
+				'/now - Gib die aktuelle Uhrzeit (UTC) aus.\n'
+				'/add_akademie - Füge eine neue Veranstaltung hinzu. (Nur mit Administratorrechten möglich).\n'
+				'/delete_akademie - Lösche eine existierende Veranstaltung. (Nur mit Administratorrechten möglich).\n'
+				'/edit_akademie - Editiere eine existierende Veranstaltung. (Nur mit Administratorrechten möglich).\n'
+				, chat_id)
 
 	def _do_list(self, chat_id, args, update):
 		"""
@@ -565,6 +566,21 @@ class CountdownBot:
 					return True
 				self.db.set_last_message_time(chat_id)
 				return False
+		else:
+			return False
+			
+	def _is_group(self, update):
+		"""
+		check if the update is from a group chat, to limit (unintentional) spam
+		"""
+		
+		chat_type = update["message"]["chat"]["type"]
+		chat_id = update["message"]["chat"]["id"]
+
+		if chat_type == "private":
+			return False
+		elif chat_type == "group" or chat_type == "supergroup":
+			return True
 		else:
 			return False
 
