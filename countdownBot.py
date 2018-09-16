@@ -102,7 +102,8 @@ class CountdownBot:
             '/workshop': self._do_sarcastic_response,
             }
         callback_handlers = {
-            '/delete_akademie': self._callback_delete
+            '/delete_akademie': self._callback_delete,
+            '/close_inline_keyboard': self._callback_close_inline_keyboard
             }
         
         if "message" in update:
@@ -121,8 +122,9 @@ class CountdownBot:
                         logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
             elif "sticker" in update["message"]:
                 if self._check_privilege(update["from"]["id"]):
-                    self.tclient.send_message("{}".format(update["message"]["sticker"]["file_id"]), update["from"]["id"])
-            
+                    self.tclient.send_message("{}".format(update["message"]["sticker"]["file_id"]),
+                                              update["from"]["id"])
+        
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
             command = args[0].replace('@cde_akademie_countdown_bot', '').lower()
@@ -298,6 +300,8 @@ class CountdownBot:
         keyboard = [[{"text": a.name,
                       "callback_data": '/delete_akademie {}'.format(a.name)}]
                     for a in akademien]
+        keyboard.append([{"text": "Keine Akademie löschen",
+                          "callback_data": "/close_inline_keyboard"}])
         self.tclient.send_message('Wähle eine Akademie aus die gelöscht werden soll', chat_id,
                                   json.dumps({"inline_keyboard": keyboard}))
     
@@ -342,13 +346,13 @@ class CountdownBot:
         Handle a /send_subscriptions command.
         """
         user_id = update["message"]["from"]["id"]
-
+        
         if not self._check_privilege(user_id):
             self.tclient.send_message(
                 'Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/',
                 chat_id)
             return
-
+        
         self.send_subscriptions('1', max_age=datetime.timedelta.max)
     
     def _do_get_subscriptions(self, chat_id, _args, update):
@@ -356,13 +360,13 @@ class CountdownBot:
         Handle a /get_subscriptions command.
         """
         user_id = update["message"]["from"]["id"]
-
+        
         if not self._check_privilege(user_id):
             self.tclient.send_message(
                 'Du hast leider nicht die erforderliche Berechtigung um diesen Befehl auszuführen :/',
                 chat_id)
             return
-            
+        
         print(self.db.get_subscriptions('1'))
     
     def _callback_delete(self, chat_id, args, update):
@@ -383,9 +387,18 @@ class CountdownBot:
         if len(args) > 1:
             self.db.delete_akademie(args[1])
             self.tclient.edit_message_text(
-                'Akademie {} wurde gelöscht'.format(args[1]),
+                'Akademie {} wurde gelöscht.'.format(args[1]),
                 chat_id,
                 msg_id)
+    
+    def _callback_close_inline_keyboard(self, chat_id, _args, update):
+        """
+        Handle the callback request of a /close_inline_keyboard command.
+        """
+        cq = update["callback_query"]
+        msg_id = cq["message"]["message_id"]
+        
+        self.tclient.edit_message_text("Keine Akademie wurde gelöscht.", chat_id, msg_id)
     
     def _check_privilege(self, user_id):
         """
@@ -431,7 +444,7 @@ class CountdownBot:
             if not akademien:
                 self.tclient.send_message('Keine passende Akademie gefunden :\'(', chat_id)
                 return
-            
+        
         elif not akademien:
             self.tclient.send_message('Es sind noch keine Akademien mit Datum eingespeichert :\'(', chat_id)
             return
