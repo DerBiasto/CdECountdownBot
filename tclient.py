@@ -1,11 +1,10 @@
 import logging
 import requests
 import json
-import time
-import datetime
 import urllib.parse
 
 logger = logging.getLogger(__name__)
+
 
 class TClient:
 	URL = "https://api.telegram.org/bot{}/{}"
@@ -81,7 +80,7 @@ class TClient:
 				result['description'] if 'description' in result else '-- unknown --'))
 
 	def delete_message(self, chat_id, message_id):
-		url = "deleteMessage?chat_id={}&message_id={}".format(text, chat_id, message_id)
+		url = "deleteMessage?chat_id={}&message_id={}".format(chat_id, message_id)
 		result = self._get_json_from_url(url)
 
 		# Check result and log errors
@@ -92,4 +91,3 @@ class TClient:
 	@staticmethod
 	def _get_last_update_id(updates):
 		return max(u['update_id'] for u in updates)
-
