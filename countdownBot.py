@@ -105,23 +105,28 @@ class CountdownBot:
             '/delete_akademie': self._callback_delete
             }
         
-        if "message" in update.keys():
+        if "message" in update:
             # Parse command
-            args = update["message"]["text"].split(' ', 1)
-            command = args[0].replace('@cde_akademie_countdown_bot', '').lower()
-            chat_id = update["message"]["chat"]["id"]
-            logger.debug("Processing message from chat {}: {}".format(chat_id, update["message"]["text"]))
-            try:
-                command_handlers[command](chat_id, args, update)
-            except KeyError:
-                if command.startswith('/'):
-                    if not self._is_group(update):
-                        self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
-                    logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
+            if "text" in update["message"]:
+                args = update["message"]["text"].split(' ', 1)
+                command = args[0].replace('@cde_akademie_countdown_bot', '').lower()
+                chat_id = update["message"]["chat"]["id"]
+                logger.debug("Processing message from chat {}: {}".format(chat_id, update["message"]["text"]))
+                try:
+                    command_handlers[command](chat_id, args, update)
+                except KeyError:
+                    if command.startswith('/'):
+                        if not self._is_group(update):
+                            self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
+                        logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
+            elif "sticker" in update["message"]:
+                if self._check_privilege(update["from"]["id"]):
+                    self.tclient.send_message("{}".format(update["message"]["sticker"]["file_id"]), update["from"]["id"])
+            
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
             command = args[0].replace('@cde_akademie_countdown_bot', '').lower()
-            chat_id = update["callback_query"]["from"]["id"]
+            chat_id = update["callback_query"]["message"]["chat"]["id"]
             logger.debug(
                 "Processing callback request from chat {}: {}".format(chat_id, update["callback_query"]["data"]))
             try:
