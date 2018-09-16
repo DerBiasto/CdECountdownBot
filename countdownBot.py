@@ -123,7 +123,7 @@ class CountdownBot:
             elif "sticker" in update["message"]:
                 if self._check_privilege(update["from"]["id"]):
                     self.tclient.send_message("{}".format(update["message"]["sticker"]["file_id"]),
-                                              update["from"]["id"])
+                                              update["message"]["from"]["id"])
         
         elif "callback_query" in update.keys():
             args = update["callback_query"]["data"].split(' ', 1)
