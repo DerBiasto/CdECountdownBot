@@ -121,7 +121,7 @@ class CountdownBot:
                             self.tclient.send_message('Unbekannter Befehl. Versuch es mal mit /help', chat_id)
                         logger.error("Unknown command received: '{}'".format(update["message"]["text"]))
             elif "sticker" in update["message"]:
-                if self._check_privilege(update["from"]["id"]):
+                if self._check_privilege(update["message"]["from"]["id"]):
                     self.tclient.send_message("{}".format(update["message"]["sticker"]["file_id"]),
                                               update["message"]["from"]["id"])
         
